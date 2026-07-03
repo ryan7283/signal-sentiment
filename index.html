@@ -657,6 +657,42 @@
   /* ── SCROLLBAR ── */
   ::-webkit-scrollbar { width: 5px; background: var(--bg); }
   ::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 3px; }
+
+  /* ── ADD TICKER MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75); z-index: 999;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #0a0f1e; border: 1px solid #1e293b;
+    border-radius: 12px; padding: 28px; width: 420px; max-width: 90vw;
+  }
+  .modal h3 { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .modal p  { font-size: 12px; color: #64748b; margin-bottom: 20px; line-height: 1.6; }
+  .modal-row { display: flex; gap: 10px; margin-bottom: 16px; }
+  .modal-input {
+    flex: 1; background: #0c1220; border: 1px solid #1f2937;
+    border-radius: 6px; padding: 9px 12px; color: #fff;
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+    font-weight: 600; letter-spacing: 0.04em; outline: none; text-transform: uppercase;
+  }
+  .modal-input:focus { border-color: #6366f1; }
+  .modal-ticker-list { display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto; margin-bottom: 16px; }
+  .modal-ticker-row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #0c1220; border: 1px solid #111827; border-radius: 6px; padding: 8px 12px;
+  }
+  .modal-ticker-left .mticker { font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: #fff; font-size: 13px; }
+  .modal-ticker-left .mname  { font-size: 10px; color: #64748b; margin-top: 1px; }
+  .btn-remove {
+    background: none; border: 1px solid #7f1d1d; color: #ef4444;
+    border-radius: 4px; padding: 3px 8px; font-size: 10px; cursor: pointer; font-family: sans-serif;
+  }
+  .btn-remove:hover { background: #3b0000; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 8px; }
+
 </style>
 </head>
 <body>
@@ -693,6 +729,7 @@
   </div>
   <button class="btn" id="searchBtn" onclick="searchTicker()">Analyze →</button>
   <button class="btn-ghost" onclick="switchTab('analyze')">Paste Posts</button>
+  <button class="btn-ghost" onclick="openTickerModal()" style="border-color:#6366f1;color:#6366f1">+ Watchlist</button>
 </div>
 
 <!-- ═══════════════════════════════════════════════ TABS -->
@@ -711,9 +748,10 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // CONFIG — edit GITHUB_USER and GITHUB_REPO to match yours after setup
 // ═══════════════════════════════════════════════════════════════════════════
-const GITHUB_USER = 'ryan7283';         // ← replace with your GitHub username
-const GITHUB_REPO = 'signal-sentiment';     // ← replace if you named it differently
-const RESULTS_URL = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/data/results.json`;
+const GITHUB_USER = 'ryan7283';
+const GITHUB_REPO = 'signal-sentiment';
+const RESULTS_URL = `https://cdn.jsdelivr.net/gh/${GITHUB_USER}/${GITHUB_REPO}@main/data/results.json`;
+
 const WATCHLIST = [
   { ticker: 'IREN',  name: 'Iris Energy' },
   { ticker: 'PLTR',  name: 'Palantir' },
@@ -753,16 +791,16 @@ let dataSource = 'demo'; // 'github' | 'demo'
 
 async function loadGitHubResults() {
   // Try to load real results from GitHub Pages / raw.githubusercontent.com
-  if (GITHUB_USER === 'ryan7283') {
+  if (GITHUB_USER === 'REPLACEME') {
     dataSource = 'demo';
     document.getElementById('lastUpdated').textContent = 'Demo mode — add your GitHub username to activate';
     return;
   }
   try {
-const res = await fetch(RESULTS_URL);    if (!res.ok) throw new Error('not found');
-    const json = await res.json();
-const data = JSON.parse(atob(json.content));
-if (data.results && data.results.length > 0) {
+    const res = await fetch(RESULTS_URL + '?t=' + Date.now());
+    if (!res.ok) throw new Error('not found');
+    const data = await res.json();
+    if (data.results && data.results.length > 0) {
       data.results.forEach(r => { results[r.ticker] = r; });
       dataSource = 'github';
       const d = new Date(data.generatedAt);
@@ -1249,6 +1287,73 @@ const SAMPLE_POSTS = {
     '$IBIT options volume exploding. Market makers hedging something big.',
   ],
 };
+
+// ── TICKER MODAL ──────────────────────────────────────────────────────────
+function openTickerModal() {
+  renderModalList();
+  document.getElementById('tickerModal').classList.add('open');
+  document.getElementById('newTickerInput').focus();
+}
+
+function closeTickerModal() {
+  document.getElementById('tickerModal').classList.remove('open');
+  render();
+}
+
+function renderModalList() {
+  const list = document.getElementById('modalTickerList');
+  list.innerHTML = WATCHLIST.map((w, i) => `
+    <div class="modal-ticker-row">
+      <div class="modal-ticker-left">
+        <div class="mticker">$${w.ticker}</div>
+        <div class="mname">${w.name}</div>
+      </div>
+      <button class="btn-remove" onclick="removeTicker(${i})">Remove</button>
+    </div>`).join('');
+}
+
+function addTickerFromModal() {
+  const ticker = document.getElementById('newTickerInput').value.trim().toUpperCase().replace(/^\$/, '');
+  const name   = document.getElementById('newTickerName').value.trim() || ticker;
+  if (!ticker) return;
+  if (WATCHLIST.find(w => w.ticker === ticker)) {
+    document.getElementById('newTickerInput').value = '';
+    document.getElementById('newTickerName').value = '';
+    return;
+  }
+  WATCHLIST.push({ ticker, name });
+  document.getElementById('newTickerInput').value = '';
+  document.getElementById('newTickerName').value = '';
+  renderModalList();
+}
+
+function removeTicker(index) {
+  const ticker = WATCHLIST[index].ticker;
+  WATCHLIST.splice(index, 1);
+  delete results[ticker];
+  renderModalList();
+}
+
 </script>
+
+<!-- ═══════════════════════════════════════════════ TICKER MODAL -->
+<div class="modal-overlay" id="tickerModal" onclick="if(event.target===this)closeTickerModal()">
+  <div class="modal">
+    <h3>Manage Watchlist</h3>
+    <p>Add any stock ticker to your watchlist. It will appear on your dashboard and be included in future scans.</p>
+    <div class="modal-row">
+      <input class="modal-input" id="newTickerInput" placeholder="TICKER" maxlength="10"
+        onkeydown="if(event.key==='Enter')addTickerFromModal()"/>
+      <input class="modal-input" id="newTickerName" placeholder="Company name" maxlength="30" style="text-transform:none"
+        onkeydown="if(event.key==='Enter')addTickerFromModal()"/>
+      <button class="btn" onclick="addTickerFromModal()" style="padding:9px 14px">Add</button>
+    </div>
+    <div class="modal-ticker-list" id="modalTickerList"></div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeTickerModal()">Done</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
