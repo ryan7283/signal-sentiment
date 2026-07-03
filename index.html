@@ -784,20 +784,18 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // CONFIG — edit GITHUB_USER and GITHUB_REPO to match yours after setup
 // ═══════════════════════════════════════════════════════════════════════════
-const GITHUB_USER = 'ryan7283';
-const GITHUB_REPO = 'signal-sentiment';
-const RESULTS_URL = `https://cdn.jsdelivr.net/gh/${GITHUB_USER}/${GITHUB_REPO}@main/data/results.json`;
+const GITHUB_USER  = 'ryan7283';
+const GITHUB_REPO  = 'signal-sentiment';
+const RESULTS_URL  = `https://cdn.jsdelivr.net/gh/${GITHUB_USER}/${GITHUB_REPO}@main/data/results.json`;
+const WATCHLIST_URL = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/watchlist.json`;
 
-const WATCHLIST = [
-  { ticker: 'IREN',  name: 'Iris Energy' },
-  { ticker: 'PLTR',  name: 'Palantir' },
-  { ticker: 'KEEL',  name: 'Keelvar' },
-  { ticker: 'AFRM',  name: 'Affirm' },
-  { ticker: 'CRWD',  name: 'CrowdStrike' },
-  { ticker: 'TSLA',  name: 'Tesla' },
-  { ticker: 'IBIT',  name: 'iShares Bitcoin ETF' },
-  { ticker: 'APLD',  name: 'Applied Digital' },
-];
+// ── GITHUB TOKEN (needed to save watchlist changes back to GitHub) ──────────
+// Create a free token at: github.com/settings/tokens
+// Click "Generate new token (classic)" → check "repo" scope → copy and paste below
+const GITHUB_TOKEN = localStorage.getItem('signal_github_token') || '';
+
+// WATCHLIST is loaded dynamically from watchlist.json in your GitHub repo
+let WATCHLIST = [];
 
 const INST_DATA = {
   IREN: { netChange: '+2.3M', topBuyer: 'ARK Invest', topSeller: 'Citadel', sentiment: 'bullish', ownership: '38%' },
@@ -821,9 +819,92 @@ let dataSource = 'demo'; // 'github' | 'demo'
 
 // ── BOOT ──────────────────────────────────────────────────────────────────
 (async function init() {
+  await loadWatchlistFromGitHub();
   await loadGitHubResults();
   render();
 })();
+
+async function loadWatchlistFromGitHub() {
+  try {
+    const res = await fetch(WATCHLIST_URL + '?t=' + Date.now(), {
+      headers: GITHUB_TOKEN ? { Authorization: `token ${GITHUB_TOKEN}` } : {}
+    });
+    if (!res.ok) throw new Error('failed');
+    const json = await res.json();
+    const data = JSON.parse(atob(json.content.replace(/\n/g, '')));
+    WATCHLIST = (data.tickers || []).map(t => ({ ticker: t.ticker, name: t.name, type: t.type || 'stock' }));
+    console.log('Watchlist loaded:', WATCHLIST.length, 'tickers');
+  } catch(e) {
+    console.warn('Could not load watchlist from GitHub, using defaults:', e.message);
+    WATCHLIST = [
+      { ticker: 'PLTR', name: 'Palantir Technologies', type: 'stock' },
+      { ticker: 'AFRM', name: 'Affirm Holdings', type: 'stock' },
+      { ticker: 'IBIT', name: 'iShares Bitcoin ETF', type: 'etf' },
+      { ticker: 'AMZN', name: 'Amazon', type: 'stock' },
+      { ticker: 'KEEL', name: 'Keelvar', type: 'stock' },
+      { ticker: 'APLD', name: 'Applied Digital', type: 'stock' },
+      { ticker: 'IREN', name: 'Iris Energy', type: 'stock' },
+      { ticker: 'FOTO', name: 'FOTO ETF', type: 'etf' },
+      { ticker: 'NASA', name: 'Procure Space ETF', type: 'etf' },
+      { ticker: 'AIPO', name: 'AI Powered IPO ETF', type: 'etf' },
+      { ticker: 'TSLA', name: 'Tesla', type: 'stock' },
+      { ticker: 'CIBR', name: 'First Trust Cybersecurity ETF', type: 'etf' },
+      { ticker: 'VST',  name: 'Vistra Corp', type: 'stock' },
+      { ticker: 'QXO',  name: 'QXO Inc', type: 'stock' },
+    ];
+  }
+}
+
+async function saveWatchlistToGitHub() {
+  if (!GITHUB_TOKEN) {
+    alert('No GitHub token set. Click the ⚙️ button in the top right to add your token.');
+    return false;
+  }
+  try {
+    // Get current file SHA (needed for updates)
+    const getRes = await fetch(WATCHLIST_URL, {
+      headers: { Authorization: `token ${GITHUB_TOKEN}` }
+    });
+    const getJson = await getRes.json();
+    const sha = getJson.sha;
+
+    // Build updated watchlist data
+    const data = {
+      lastUpdated: new Date().toISOString().slice(0,10),
+      tickers: WATCHLIST.map(w => ({
+        ticker: w.ticker,
+        name: w.name,
+        type: w.type || 'stock',
+        sector: w.sector || '',
+        query: w.query || `$${w.ticker} OR #${w.ticker} OR "${w.name}"`
+      }))
+    };
+
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+    const putRes = await fetch(WATCHLIST_URL, {
+      method: 'PUT',
+      headers: {
+        Authorization: `token ${GITHUB_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: `Update watchlist: ${new Date().toISOString().slice(0,10)}`,
+        content: encoded,
+        sha: sha
+      })
+    });
+
+    if (!putRes.ok) {
+      const err = await putRes.json();
+      console.error('Save failed:', err);
+      return false;
+    }
+    return true;
+  } catch(e) {
+    console.error('Save error:', e);
+    return false;
+  }
+}
 
 async function loadGitHubResults() {
   // Try to load real results from GitHub Pages / raw.githubusercontent.com
@@ -1391,26 +1472,58 @@ function renderModalList() {
     </div>`).join('');
 }
 
-function addTickerFromModal() {
+async function addTickerFromModal() {
   const ticker = document.getElementById('newTickerInput').value.trim().toUpperCase().replace(/^\$/, '');
   const name   = document.getElementById('newTickerName').value.trim() || ticker;
+  const type   = document.getElementById('newTickerType')?.value || 'stock';
   if (!ticker) return;
   if (WATCHLIST.find(w => w.ticker === ticker)) {
     document.getElementById('newTickerInput').value = '';
     document.getElementById('newTickerName').value = '';
     return;
   }
-  WATCHLIST.push({ ticker, name });
+  WATCHLIST.push({ ticker, name, type, query: `$${ticker} OR #${ticker} OR "${name}"` });
   document.getElementById('newTickerInput').value = '';
   document.getElementById('newTickerName').value = '';
+
+  const saveBtn = document.getElementById('saveWatchlistBtn');
+  if (saveBtn) { saveBtn.textContent = 'Saving...'; saveBtn.disabled = true; }
+  const saved = await saveWatchlistToGitHub();
+  if (saveBtn) {
+    saveBtn.textContent = saved ? '✓ Saved to GitHub' : '⚠ Save failed — check token';
+    saveBtn.disabled = false;
+    setTimeout(() => { if(saveBtn) saveBtn.textContent = 'Save to GitHub'; }, 3000);
+  }
   renderModalList();
 }
 
-function removeTicker(index) {
+async function removeTicker(index) {
   const ticker = WATCHLIST[index].ticker;
   WATCHLIST.splice(index, 1);
   delete results[ticker];
+  const saved = await saveWatchlistToGitHub();
   renderModalList();
+  if (!saved) alert('Could not save to GitHub — check your token in settings.');
+}
+
+
+// ── GITHUB TOKEN SETUP ────────────────────────────────────────────────────
+function promptGitHubToken() {
+  const current = localStorage.getItem('signal_github_token') || '';
+  const token = prompt(
+    'Paste your GitHub Personal Access Token below.\n\n' +
+    'To create one (free):\n' +
+    '1. Go to github.com/settings/tokens\n' +
+    '2. Click "Generate new token (classic)"\n' +
+    '3. Name it "signal-sentiment"\n' +
+    '4. Check the "repo" checkbox\n' +
+    '5. Click "Generate token" and copy it here',
+    current
+  );
+  if (token !== null) {
+    localStorage.setItem('signal_github_token', token);
+    alert(token ? 'Token saved! You can now save watchlist changes.' : 'Token cleared.');
+  }
 }
 
 </script>
@@ -1419,16 +1532,22 @@ function removeTicker(index) {
 <div class="modal-overlay" id="tickerModal" onclick="if(event.target===this)closeTickerModal()">
   <div class="modal">
     <h3>Manage Watchlist</h3>
-    <p>Add any stock ticker to your watchlist. It will appear on your dashboard and be included in future scans.</p>
-    <div class="modal-row">
-      <input class="modal-input" id="newTickerInput" placeholder="TICKER" maxlength="10"
+    <p>Add any ticker below. Changes save automatically to your GitHub repo and persist across all sessions.</p>
+    <div class="modal-row" style="flex-wrap:wrap;gap:8px">
+      <input class="modal-input" id="newTickerInput" placeholder="TICKER" maxlength="10" style="max-width:100px"
         onkeydown="if(event.key==='Enter')addTickerFromModal()"/>
-      <input class="modal-input" id="newTickerName" placeholder="Company name" maxlength="30" style="text-transform:none"
+      <input class="modal-input" id="newTickerName" placeholder="Company / ETF name" maxlength="40" style="text-transform:none;flex:1"
         onkeydown="if(event.key==='Enter')addTickerFromModal()"/>
+      <select id="newTickerType" style="background:#0c1220;border:1px solid #1f2937;color:#fff;padding:9px 10px;border-radius:6px;font-size:12px;outline:none">
+        <option value="stock">Stock</option>
+        <option value="etf">ETF</option>
+      </select>
       <button class="btn" onclick="addTickerFromModal()" style="padding:9px 14px">Add</button>
     </div>
     <div class="modal-ticker-list" id="modalTickerList"></div>
     <div class="modal-footer">
+      <button class="btn-ghost" id="saveWatchlistBtn" onclick="saveWatchlistToGitHub().then(ok=>alert(ok?'Saved!':'Failed — check token'))">Save to GitHub</button>
+      <button class="btn-ghost" onclick="promptGitHubToken()">⚙ Token</button>
       <button class="btn-ghost" onclick="closeTickerModal()">Done</button>
     </div>
   </div>
