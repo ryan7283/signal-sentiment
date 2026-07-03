@@ -786,7 +786,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 const GITHUB_USER  = 'ryan7283';
 const GITHUB_REPO  = 'signal-sentiment';
-const RESULTS_URL  = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/data/results.json`;
+const RESULTS_URL  = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/data/results.json`;
 const WATCHLIST_URL = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/watchlist.json`;
 
 // ── GITHUB TOKEN (needed to save watchlist changes back to GitHub) ──────────
@@ -914,9 +914,7 @@ async function loadGitHubResults() {
   }
   try {
     // Use GitHub API with raw accept header — always fresh, no CDN caching
-    const headers = { 'Accept': 'application/vnd.github.v3.raw', 'Cache-Control': 'no-cache' };
-    if (GITHUB_TOKEN) headers['Authorization'] = `token ${GITHUB_TOKEN}`;
-    const res = await fetch(RESULTS_URL + '?t=' + Date.now(), { headers });
+    const res = await fetch(RESULTS_URL + '?t=' + Date.now());
     if (!res.ok) throw new Error('GitHub API returned ' + res.status);
     const data = await res.json();
     if (data.results && data.results.length > 0) {
