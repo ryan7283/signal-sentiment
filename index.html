@@ -1,0 +1,1255 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGNAL — Stock Sentiment Engine</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    --bg:        #04070f;
+    --bg2:       #080d18;
+    --bg3:       #0c1220;
+    --border:    #111827;
+    --border2:   #1f2937;
+    --text:      #e2e8f0;
+    --muted:     #64748b;
+    --faint:     #1e293b;
+    --accent:    #6366f1;
+    --accent2:   #4f46e5;
+    --green:     #22c55e;
+    --green-bg:  #052e16;
+    --green-bd:  #14532d;
+    --red:       #ef4444;
+    --red-bg:    #3b0000;
+    --red-bd:    #7f1d1d;
+    --amber:     #f59e0b;
+    --mono:      'IBM Plex Mono', monospace;
+    --sans:      'Inter', system-ui, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+  }
+  .logo {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .logo-word {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.06em;
+  }
+  .logo-sub {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.14em;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .pulse-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+  }
+  .last-updated {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  /* ── SEARCH BAR ── */
+  .search-section {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    max-width: 440px;
+  }
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 14px;
+    pointer-events: none;
+  }
+  .search-input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 9px 12px 9px 36px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    outline: none;
+    transition: border-color 0.15s;
+    text-transform: uppercase;
+  }
+  .search-input::placeholder {
+    color: var(--muted);
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .search-input:focus { border-color: var(--accent); }
+  .btn {
+    background: linear-gradient(135deg, var(--accent2), #7c3aed);
+    color: #fff;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    font-family: var(--sans);
+    transition: opacity 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover { opacity: 0.88; }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-ghost {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    padding: 9px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    font-family: var(--sans);
+    transition: all 0.15s;
+  }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    background: var(--bg2);
+  }
+  .tab {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    padding: 11px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    font-family: var(--sans);
+    transition: color 0.15s;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  /* ── MAIN LAYOUT ── */
+  .main { padding: 24px 28px; max-width: 1400px; }
+
+  /* ── STAT STRIP ── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+  .stat {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+  }
+  .stat-label {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+  }
+  .stat-value.green { color: var(--green); }
+  .stat-value.red   { color: var(--red); }
+  .stat-value.amber { color: var(--amber); }
+  .stat-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  /* ── TICKER GRID ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 10px;
+  }
+
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.12s;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .card.bullish::before { background: linear-gradient(90deg, var(--green), transparent); opacity: 1; }
+  .card.bearish::before { background: linear-gradient(90deg, var(--red), transparent); opacity: 1; }
+  .card.neutral-card::before { background: linear-gradient(90deg, var(--amber), transparent); opacity: 1; }
+  .card:hover { border-color: var(--border2); transform: translateY(-1px); }
+  .card.selected { border-color: var(--accent); }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+  .ticker-name {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.01em;
+  }
+  .company-name {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .badges { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+
+  /* ── SIGNAL BADGE ── */
+  .signal {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 3px 8px;
+    border-radius: 3px;
+    display: inline-block;
+  }
+  .signal-STRONG_BUY  { background: var(--green-bg); color: #4ade80; border: 1px solid var(--green-bd); }
+  .signal-BUY         { background: #052e16; color: #86efac; border: 1px solid #166534; }
+  .signal-NEUTRAL     { background: #1c1917; color: #a8a29e; border: 1px solid #292524; }
+  .signal-SELL        { background: var(--red-bg); color: #fca5a5; border: 1px solid var(--red-bd); }
+  .signal-STRONG_SELL { background: #3b0000; color: var(--red); border: 1px solid #450a0a; }
+  .signal-LOADING     { background: var(--faint); color: var(--muted); border: 1px solid var(--border2); animation: blink 1.4s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .signal-PENDING     { background: var(--bg3); color: var(--muted); border: 1px solid var(--border); }
+  .inst-badge { font-size: 9px; font-family: var(--mono); font-weight: 600; }
+  .inst-bullish { color: var(--green); }
+  .inst-bearish { color: var(--red); }
+  .inst-neutral { color: var(--amber); }
+  .inst-na      { color: var(--muted); }
+
+  /* ── SCORE BAR ── */
+  .score-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .bar-track {
+    flex: 1;
+    height: 5px;
+    background: var(--faint);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .bar-fill.green { background: var(--green); }
+  .bar-fill.red   { background: var(--red); }
+  .bar-fill.amber { background: var(--amber); }
+  .score-val {
+    font-family: var(--mono);
+    font-size: 11px;
+    min-width: 38px;
+    text-align: right;
+  }
+
+  .card-summary {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.55;
+    margin-bottom: 10px;
+  }
+  .themes {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .theme {
+    font-size: 9px;
+    background: var(--bg3);
+    color: var(--muted);
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    letter-spacing: 0.02em;
+  }
+  .card-counts {
+    display: flex;
+    gap: 14px;
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .card-counts .g { color: var(--green); }
+  .card-counts .r { color: var(--red); }
+
+  .card-inst {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .card-inst span b { color: #94a3b8; }
+
+  /* ── UNANALYZED CARD ── */
+  .card-empty {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .btn-small {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    color: var(--accent);
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: all 0.15s;
+  }
+  .btn-small:hover { border-color: var(--accent); background: #1e1b4b22; }
+
+  /* LOADING SHIMMER */
+  .shimmer {
+    width: 100%;
+    height: 5px;
+    background: var(--faint);
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 12px 0;
+  }
+  .shimmer-bar {
+    height: 100%;
+    width: 45%;
+    background: linear-gradient(90deg, var(--accent2), #7c3aed);
+    border-radius: 3px;
+    animation: shimmy 1.3s ease-in-out infinite;
+  }
+  @keyframes shimmy { 0%{transform:translateX(-120%)} 100%{transform:translateX(320%)} }
+
+  /* ── DETAIL PANEL ── */
+  .detail { max-width: 760px; }
+  .detail-back {
+    background: none; border: none;
+    color: var(--muted); cursor: pointer;
+    font-size: 12px; font-family: var(--sans);
+    font-weight: 600; padding: 0;
+    margin-bottom: 22px;
+    display: flex; align-items: center; gap: 6px;
+    transition: color 0.15s;
+  }
+  .detail-back:hover { color: var(--text); }
+  .detail-title {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+  .detail-ticker {
+    font-family: var(--mono);
+    font-size: 36px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.02em;
+  }
+  .detail-meta { color: var(--muted); font-size: 11px; margin-top: 3px; }
+
+  .detail-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .detail-grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px; }
+
+  .box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .box-label {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .box-body {
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.65;
+  }
+  .box-val {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: #94a3b8;
+    font-weight: 600;
+  }
+  .box-sub { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+  .quote-box {
+    background: var(--bg2);
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 12px;
+    line-height: 1.65;
+    font-style: italic;
+  }
+  .quote-box.bull { border: 1px solid var(--green-bd); color: #86efac; }
+  .quote-box.bear { border: 1px solid var(--red-bd); color: #fca5a5; }
+
+  .inst-box {
+    background: var(--bg2);
+    border: 1px solid #1e3a5f;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 10px;
+  }
+  .inst-note {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: var(--bg3);
+    border-radius: 5px;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* ── ANALYZE TAB ── */
+  .analyze-wrap { max-width: 640px; }
+  .analyze-wrap h3 { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .analyze-wrap p  { font-size: 12px; color: var(--muted); margin-bottom: 18px; line-height: 1.6; }
+  .analyze-controls { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  select.ticker-select {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: var(--mono);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    outline: none;
+    cursor: pointer;
+  }
+  textarea.paste-area {
+    width: 100%;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    color: #cbd5e1;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.7;
+    resize: vertical;
+    outline: none;
+    font-family: var(--sans);
+    transition: border-color 0.15s;
+  }
+  textarea.paste-area:focus { border-color: var(--accent); }
+  .result-mini {
+    margin-top: 14px;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .result-mini-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .result-mini-ticker {
+    font-family: var(--mono);
+    font-weight: 800;
+    color: #fff;
+    font-size: 16px;
+  }
+  .result-mini-summary {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-top: 10px;
+  }
+  .view-detail-link {
+    background: none; border: none;
+    color: var(--accent); font-size: 11px;
+    font-weight: 600; cursor: pointer;
+    font-family: var(--sans);
+    padding: 0; margin-top: 8px;
+    display: block;
+    transition: opacity 0.15s;
+  }
+  .view-detail-link:hover { opacity: 0.75; }
+
+  /* ── LOG TAB ── */
+  .log-wrap { max-width: 640px; }
+  .log-wrap h3 { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 16px; }
+  .log-empty { font-size: 13px; color: var(--muted); }
+  .log-entry {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .log-left { display: flex; gap: 12px; align-items: center; }
+  .log-ticker { font-family: var(--mono); font-weight: 800; color: #fff; min-width: 50px; font-size: 13px; }
+  .log-count { font-size: 10px; color: var(--muted); }
+  .log-manual { font-size: 9px; color: #7c3aed; font-weight: 700; letter-spacing: 0.08em; }
+  .log-time { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+  /* ── PORTFOLIO PULSE ── */
+  .pulse-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pulse-label { font-size: 9px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+  .pulse-val {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 800;
+  }
+
+  /* ── SETUP BANNER ── */
+  .setup-banner {
+    background: linear-gradient(135deg, #1e1b4b, #0f172a);
+    border: 1px solid #312e81;
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+  }
+  .setup-banner-text h4 { font-size: 14px; font-weight: 700; color: #c7d2fe; margin-bottom: 4px; }
+  .setup-banner-text p  { font-size: 12px; color: #818cf8; line-height: 1.5; }
+  .setup-steps { display: flex; gap: 8px; flex-wrap: wrap; }
+  .setup-step {
+    font-size: 10px;
+    background: #1e1b4b;
+    border: 1px solid #3730a3;
+    color: #a5b4fc;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-family: var(--mono);
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .empty-state h3 { font-size: 16px; color: var(--text); margin-bottom: 8px; }
+  .empty-state p  { font-size: 13px; line-height: 1.6; max-width: 400px; margin: 0 auto 20px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    .header { padding: 0 16px; }
+    .search-section { padding: 12px 16px; flex-wrap: wrap; }
+    .tabs { padding: 0 16px; overflow-x: auto; }
+    .main { padding: 16px; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .grid { grid-template-columns: 1fr; }
+    .detail-grid2 { grid-template-columns: 1fr; }
+    .detail-grid4 { grid-template-columns: repeat(2, 1fr); }
+    .logo-sub { display: none; }
+    .setup-banner { flex-direction: column; }
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════ HEADER -->
+<header class="header">
+  <div class="logo">
+    <span class="logo-word">SIGNAL</span>
+    <span class="logo-sub">Retail + Institutional Intelligence</span>
+  </div>
+  <div class="header-right">
+    <div class="pulse-section" id="portfolioPulse" style="display:none">
+      <span class="pulse-label">Portfolio Pulse</span>
+      <span class="pulse-val" id="pulseVal">—</span>
+    </div>
+    <div class="pulse-dot"></div>
+    <span class="last-updated" id="lastUpdated">—</span>
+    <button class="btn" id="runAllBtn" onclick="runAll()">⚡ Full Scan</button>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════ SEARCH -->
+<div class="search-section">
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input
+      type="text"
+      class="search-input"
+      id="searchInput"
+      placeholder="Search any ticker — e.g. NVDA, AMD, AAOI..."
+      maxlength="10"
+      onkeydown="if(event.key==='Enter') searchTicker()"
+    />
+  </div>
+  <button class="btn" id="searchBtn" onclick="searchTicker()">Analyze →</button>
+  <button class="btn-ghost" onclick="switchTab('analyze')">Paste Posts</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════ TABS -->
+<div class="tabs">
+  <button class="tab active" id="tab-overview"  onclick="switchTab('overview')">Overview</button>
+  <button class="tab"        id="tab-analyze"   onclick="switchTab('analyze')">Analyze Posts</button>
+  <button class="tab"        id="tab-log"       onclick="switchTab('log')">Activity Log</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════ MAIN -->
+<div class="main" id="mainContent">
+  <!-- Content injected by JS -->
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// CONFIG — edit GITHUB_USER and GITHUB_REPO to match yours after setup
+// ═══════════════════════════════════════════════════════════════════════════
+const GITHUB_USER = 'YOURUSERNAME';         // ← replace with your GitHub username
+const GITHUB_REPO = 'signal-sentiment';     // ← replace if you named it differently
+const RESULTS_URL = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/data/results.json`;
+
+const WATCHLIST = [
+  { ticker: 'IREN',  name: 'Iris Energy' },
+  { ticker: 'PLTR',  name: 'Palantir' },
+  { ticker: 'KEEL',  name: 'Keelvar' },
+  { ticker: 'AFRM',  name: 'Affirm' },
+  { ticker: 'CRWD',  name: 'CrowdStrike' },
+  { ticker: 'TSLA',  name: 'Tesla' },
+  { ticker: 'IBIT',  name: 'iShares Bitcoin ETF' },
+  { ticker: 'APLD',  name: 'Applied Digital' },
+];
+
+const INST_DATA = {
+  IREN: { netChange: '+2.3M', topBuyer: 'ARK Invest', topSeller: 'Citadel', sentiment: 'bullish', ownership: '38%' },
+  PLTR: { netChange: '+8.1M', topBuyer: 'Vanguard', topSeller: 'Morgan Stanley', sentiment: 'bullish', ownership: '54%' },
+  CRWD: { netChange: '+1.2M', topBuyer: 'BlackRock', topSeller: 'Goldman Sachs', sentiment: 'neutral', ownership: '71%' },
+  TSLA: { netChange: '-4.5M', topBuyer: 'State Street', topSeller: 'ARK Invest', sentiment: 'bearish', ownership: '48%' },
+  AFRM: { netChange: '+0.8M', topBuyer: 'ARK Invest', topSeller: 'Two Sigma', sentiment: 'neutral', ownership: '62%' },
+  KEEL: { netChange: 'N/A', topBuyer: '—', topSeller: '—', sentiment: 'na', ownership: 'Private' },
+  IBIT: { netChange: '+12.4M', topBuyer: 'Millennium Mgmt', topSeller: 'Jane Street', sentiment: 'bullish', ownership: '22%' },
+  APLD: { netChange: '+1.8M', topBuyer: 'Renaissance Tech', topSeller: 'Susquehanna', sentiment: 'bullish', ownership: '29%' },
+};
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+let results    = {};
+let loading    = {};
+let activeTab  = 'overview';
+let selectedTicker = null;
+let activityLog = [];
+let runningAll = false;
+let dataSource = 'demo'; // 'github' | 'demo'
+
+// ── BOOT ──────────────────────────────────────────────────────────────────
+(async function init() {
+  await loadGitHubResults();
+  render();
+})();
+
+async function loadGitHubResults() {
+  // Try to load real results from GitHub Pages / raw.githubusercontent.com
+  if (GITHUB_USER === 'YOURUSERNAME') {
+    dataSource = 'demo';
+    document.getElementById('lastUpdated').textContent = 'Demo mode — add your GitHub username to activate';
+    return;
+  }
+  try {
+    const res = await fetch(RESULTS_URL + '?t=' + Date.now());
+    if (!res.ok) throw new Error('not found');
+    const data = await res.json();
+    if (data.results && data.results.length > 0) {
+      data.results.forEach(r => { results[r.ticker] = r; });
+      dataSource = 'github';
+      const d = new Date(data.generatedAt);
+      document.getElementById('lastUpdated').textContent =
+        'Last scan: ' + d.toLocaleDateString('en-US', { month:'short', day:'numeric' }) +
+        ' ' + d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+      updatePulse();
+    }
+  } catch(e) {
+    dataSource = 'demo';
+    document.getElementById('lastUpdated').textContent = 'No scan data yet — run your first scan';
+  }
+}
+
+// ── SENTIMENT ANALYSIS via Claude API ─────────────────────────────────────
+async function analyzeTicker(ticker, posts, isManual = false) {
+  loading[ticker] = true;
+  render();
+
+  const block = posts.slice(0, 30).map((t, i) => `${i+1}. "${t}"`).join('\n');
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content:
+          `You are a financial sentiment analysis engine. Analyze these social media posts about $${ticker} and return ONLY valid JSON — no markdown, no explanation, no preamble.\n\nPosts:\n${block}\n\nReturn exactly:\n{\n  "ticker": "${ticker}",\n  "sentimentScore": <float -1.0 to 1.0>,\n  "signal": <"STRONG_BUY"|"BUY"|"NEUTRAL"|"SELL"|"STRONG_SELL">,\n  "bullCount": <int>,\n  "bearCount": <int>,\n  "neutralCount": <int>,\n  "keyThemes": [<3-5 short strings>],\n  "topBullish": <most bullish post verbatim or null>,\n  "topBearish": <most bearish post verbatim or null>,\n  "summary": <2-sentence analyst summary>,\n  "confidence": <"high"|"medium"|"low">,\n  "analyzedAt": "${new Date().toISOString()}"\n}`
+        }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.find(b => b.type === 'text')?.text || '{}';
+    const parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
+    results[ticker] = parsed;
+    activityLog.unshift({ ticker, time: new Date().toLocaleTimeString(), signal: parsed.signal, postCount: posts.length, isManual, score: parsed.sentimentScore });
+    if (activityLog.length > 30) activityLog.pop();
+    updatePulse();
+  } catch(e) {
+    results[ticker] = { error: true, ticker, signal: 'NEUTRAL', sentimentScore: 0 };
+  }
+  loading[ticker] = false;
+  render();
+}
+
+async function searchTicker() {
+  const raw = document.getElementById('searchInput').value.trim().toUpperCase().replace(/^\$/, '');
+  if (!raw) return;
+  document.getElementById('searchBtn').disabled = true;
+  document.getElementById('searchBtn').textContent = 'Searching...';
+
+  // Add to watchlist if not already there
+  if (!WATCHLIST.find(w => w.ticker === raw)) {
+    WATCHLIST.push({ ticker: raw, name: raw });
+  }
+
+  // Use sample posts or generic placeholder posts
+  const posts = SAMPLE_POSTS[raw] || [
+    `$${raw} is getting a lot of attention right now. Worth watching closely.`,
+    `Anyone tracking $${raw}? The chart looks interesting at this level.`,
+    `$${raw} fundamentals are improving quarter over quarter. Bullish long term.`,
+    `Not sure about $${raw} at this valuation. Seems stretched to me.`,
+    `$${raw} management has been executing well. Adding to my position.`,
+  ];
+
+  selectedTicker = raw;
+  activeTab = 'overview';
+  await analyzeTicker(raw, posts);
+
+  document.getElementById('searchBtn').disabled = false;
+  document.getElementById('searchBtn').textContent = 'Analyze →';
+  document.getElementById('searchInput').value = '';
+}
+
+async function runAll() {
+  if (runningAll) return;
+  runningAll = true;
+  document.getElementById('runAllBtn').disabled = true;
+  document.getElementById('runAllBtn').textContent = '⟳ Scanning...';
+
+  for (const { ticker } of WATCHLIST) {
+    const posts = SAMPLE_POSTS[ticker] || getGenericPosts(ticker);
+    await analyzeTicker(ticker, posts);
+    await sleep(300);
+  }
+
+  runningAll = false;
+  document.getElementById('runAllBtn').disabled = false;
+  document.getElementById('runAllBtn').textContent = '⚡ Full Scan';
+}
+
+function getGenericPosts(ticker) {
+  return [
+    `$${ticker} showing momentum today. Watching for a breakout above key resistance.`,
+    `Accumulated more $${ticker} on the dip. High conviction here.`,
+    `$${ticker} earnings next quarter — guidance will be everything.`,
+    `Not impressed with $${ticker} recent numbers. Trimming my position.`,
+    `$${ticker} is exactly the kind of name I want in a risk-on environment.`,
+  ];
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── PULSE ─────────────────────────────────────────────────────────────────
+function updatePulse() {
+  const scored = Object.values(results).filter(r => !r.error && r.sentimentScore !== undefined);
+  if (!scored.length) return;
+  const avg = scored.reduce((s,r) => s + r.sentimentScore, 0) / scored.length;
+  const el = document.getElementById('portfolioPulse');
+  const vl = document.getElementById('pulseVal');
+  el.style.display = 'flex';
+  const color = avg > 0.15 ? '#22c55e' : avg < -0.15 ? '#ef4444' : '#f59e0b';
+  vl.style.color = color;
+  vl.textContent = (avg > 0 ? '▲ +' : '▼ ') + avg.toFixed(2);
+}
+
+// ── TAB SWITCH ────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  selectedTicker = null;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab)?.classList.add('active');
+  render();
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────
+function render() {
+  const main = document.getElementById('mainContent');
+
+  if (activeTab === 'overview') {
+    if (selectedTicker && results[selectedTicker] && !results[selectedTicker].error) {
+      main.innerHTML = renderDetail(selectedTicker);
+    } else {
+      main.innerHTML = renderOverview();
+    }
+  } else if (activeTab === 'analyze') {
+    main.innerHTML = renderAnalyze();
+    attachAnalyzeListeners();
+  } else if (activeTab === 'log') {
+    main.innerHTML = renderLog();
+  }
+}
+
+// ── OVERVIEW ──────────────────────────────────────────────────────────────
+function renderOverview() {
+  const analyzed = Object.keys(results).length;
+  const bulls = Object.values(results).filter(r => ['BUY','STRONG_BUY'].includes(r.signal)).length;
+  const bears = Object.values(results).filter(r => ['SELL','STRONG_SELL'].includes(r.signal)).length;
+
+  const banner = dataSource === 'demo' ? `
+    <div class="setup-banner">
+      <div class="setup-banner-text">
+        <h4>📡 Live data not connected — showing demo mode</h4>
+        <p>Your daily scan results will appear here automatically once you complete GitHub setup. Sample data is shown below so you can see how the dashboard looks.</p>
+      </div>
+      <div class="setup-steps">
+        <span class="setup-step">1. Upload files to GitHub</span>
+        <span class="setup-step">2. Add API keys to Secrets</span>
+        <span class="setup-step">3. Run first scan</span>
+        <span class="setup-step">4. Update GITHUB_USER in index.html</span>
+      </div>
+    </div>` : '';
+
+  const stats = `
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Tickers Tracked</div>
+        <div class="stat-value">${WATCHLIST.length}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Analyzed Today</div>
+        <div class="stat-value">${analyzed}<span style="font-size:16px;color:var(--muted)"> / ${WATCHLIST.length}</span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Bullish Signals</div>
+        <div class="stat-value green">${bulls}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Bearish Signals</div>
+        <div class="stat-value red">${bears}</div>
+      </div>
+    </div>`;
+
+  const cards = WATCHLIST.map(({ticker, name}) => renderCard(ticker, name)).join('');
+
+  return banner + stats + `<div class="grid">${cards}</div>`;
+}
+
+function renderCard(ticker, name) {
+  const r = results[ticker];
+  const isLoading = loading[ticker];
+  const inst = INST_DATA[ticker];
+
+  let sentiment = '';
+  if (r && !r.error) {
+    const sig = r.signal;
+    sentiment = sig === 'STRONG_BUY' || sig === 'BUY' ? 'bullish' :
+                sig === 'STRONG_SELL' || sig === 'SELL' ? 'bearish' : 'neutral-card';
+  }
+
+  let body = '';
+  if (isLoading) {
+    body = `<div class="shimmer"><div class="shimmer-bar"></div></div><div style="font-size:11px;color:var(--muted)">Analyzing posts...</div>`;
+  } else if (r && !r.error) {
+    const pct = ((r.sentimentScore + 1) / 2) * 100;
+    const barClass = r.sentimentScore > 0.2 ? 'green' : r.sentimentScore < -0.2 ? 'red' : 'amber';
+    const valColor = r.sentimentScore > 0.2 ? 'var(--green)' : r.sentimentScore < -0.2 ? 'var(--red)' : 'var(--amber)';
+    const scoreStr = (r.sentimentScore > 0 ? '+' : '') + r.sentimentScore.toFixed(2);
+    const themes = (r.keyThemes||[]).slice(0,3).map(t => `<span class="theme">${t}</span>`).join('');
+    const instStrip = inst ? `
+      <div class="card-inst">
+        <span>Flow: <b>${inst.netChange}</b></span>
+        <span>Buyer: <b>${inst.topBuyer}</b></span>
+        <span>Own: <b>${inst.ownership}</b></span>
+      </div>` : '';
+    body = `
+      <div class="score-row">
+        <div class="bar-track"><div class="bar-fill ${barClass}" style="width:${pct}%"></div></div>
+        <span class="score-val" style="color:${valColor}">${scoreStr}</span>
+      </div>
+      <div class="card-summary">${r.summary || ''}</div>
+      <div class="themes">${themes}</div>
+      <div class="card-counts">
+        <span class="g">▲ ${r.bullCount} bull</span>
+        <span class="r">▼ ${r.bearCount} bear</span>
+        <span>— ${r.neutralCount} neutral</span>
+      </div>
+      ${instStrip}`;
+  } else {
+    const hasSample = !!SAMPLE_POSTS[ticker];
+    body = `
+      <div class="card-empty">Not yet analyzed</div>
+      ${hasSample ? `<button class="btn-small" onclick="event.stopPropagation();analyzeTicker('${ticker}', SAMPLE_POSTS['${ticker}'])">Analyze sample data →</button>` : ''}`;
+  }
+
+  const instBadge = inst ? `<span class="inst-badge inst-${inst.sentiment}">${inst.sentiment === 'bullish' ? 'INST BUYING' : inst.sentiment === 'bearish' ? 'INST SELLING' : inst.sentiment === 'na' ? 'PRIVATE' : 'INST NEUTRAL'}</span>` : '';
+  const sigBadge = isLoading ? `<span class="signal signal-LOADING">ANALYZING</span>` :
+                   r && !r.error ? `<span class="signal signal-${r.signal}">${r.signal.replace('_',' ')}</span>` :
+                   `<span class="signal signal-PENDING">PENDING</span>`;
+
+  const clickable = r && !r.error ? `onclick="selectTicker('${ticker}')"` : '';
+
+  return `
+    <div class="card ${sentiment}" ${clickable}>
+      <div class="card-header">
+        <div>
+          <div class="ticker-name">$${ticker}</div>
+          <div class="company-name">${name}</div>
+        </div>
+        <div class="badges">${sigBadge}${instBadge}</div>
+      </div>
+      ${body}
+    </div>`;
+}
+
+function selectTicker(ticker) {
+  selectedTicker = ticker;
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── DETAIL ────────────────────────────────────────────────────────────────
+function renderDetail(ticker) {
+  const r = results[ticker];
+  const inst = INST_DATA[ticker];
+  const pct = ((r.sentimentScore + 1) / 2) * 100;
+  const barClass = r.sentimentScore > 0.2 ? 'green' : r.sentimentScore < -0.2 ? 'red' : 'amber';
+  const valColor = r.sentimentScore > 0.2 ? 'var(--green)' : r.sentimentScore < -0.2 ? 'var(--red)' : 'var(--amber)';
+  const themes = (r.keyThemes||[]).map(t => `<span class="theme">${t}</span>`).join('');
+  const time = r.analyzedAt ? new Date(r.analyzedAt).toLocaleTimeString() : '—';
+
+  const instSection = inst ? `
+    <div class="inst-box">
+      <div class="box-label">Institutional Activity — 13F / Latest Quarter</div>
+      <div class="detail-grid4">
+        <div><div class="box-label">Net Share Change</div><div class="box-val">${inst.netChange}</div></div>
+        <div><div class="box-label">Largest Buyer</div><div class="box-val">${inst.topBuyer}</div></div>
+        <div><div class="box-label">Largest Seller</div><div class="box-val">${inst.topSeller}</div></div>
+        <div><div class="box-label">Inst. Ownership</div><div class="box-val">${inst.ownership}</div></div>
+      </div>
+      <div class="inst-note">⚠ Sample institutional data shown. Live data requires Quiver Quant or SEC EDGAR integration (see setup guide Phase 2).</div>
+    </div>` : '';
+
+  return `
+    <div class="detail">
+      <button class="detail-back" onclick="selectedTicker=null;render()">← Back to overview</button>
+      <div class="detail-title">
+        <div>
+          <div class="detail-ticker">$${ticker}</div>
+          <div class="detail-meta">Last analyzed ${time} · ${r.confidence || '—'} confidence · ${(r.tweetCount||0) || '?'} posts</div>
+        </div>
+        <span class="signal signal-${r.signal}" style="font-size:11px;padding:5px 12px">${r.signal.replace('_',' ')}</span>
+      </div>
+
+      <div class="detail-grid2">
+        <div class="box">
+          <div class="box-label">Sentiment Score</div>
+          <div class="score-row" style="margin-bottom:0">
+            <div class="bar-track"><div class="bar-fill ${barClass}" style="width:${pct}%"></div></div>
+            <span class="score-val" style="color:${valColor}">${(r.sentimentScore>0?'+':'') + r.sentimentScore.toFixed(2)}</span>
+          </div>
+        </div>
+        <div class="box">
+          <div class="box-label">Post Breakdown</div>
+          <div style="display:flex;gap:18px;font-size:13px;margin-top:4px">
+            <span style="color:var(--green)">▲ ${r.bullCount} bullish</span>
+            <span style="color:var(--red)">▼ ${r.bearCount} bearish</span>
+            <span style="color:var(--muted)">— ${r.neutralCount} neutral</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="box" style="margin-bottom:10px">
+        <div class="box-label">AI Analyst Summary</div>
+        <div class="box-body">${r.summary}</div>
+        <div class="themes" style="margin-top:12px;margin-bottom:0">${themes}</div>
+      </div>
+
+      <div class="detail-grid2" style="margin-bottom:10px">
+        ${r.topBullish ? `<div class="quote-box bull"><div class="box-label" style="color:var(--green);margin-bottom:8px">Top Bullish Post</div>"${r.topBullish}"</div>` : '<div></div>'}
+        ${r.topBearish ? `<div class="quote-box bear"><div class="box-label" style="color:var(--red);margin-bottom:8px">Top Bearish Post</div>"${r.topBearish}"</div>` : '<div></div>'}
+      </div>
+
+      ${instSection}
+    </div>`;
+}
+
+// ── ANALYZE ───────────────────────────────────────────────────────────────
+function renderAnalyze() {
+  const opts = WATCHLIST.map(({ticker}) => `<option value="${ticker}">$${ticker}</option>`).join('');
+  const mini = results['__manual'] && !results['__manual'].error ? `
+    <div class="result-mini">
+      <div class="result-mini-header">
+        <span class="result-mini-ticker">$${results['__manual'].ticker}</span>
+        <span class="signal signal-${results['__manual'].signal}">${results['__manual'].signal.replace('_',' ')}</span>
+      </div>
+      <div class="score-row">
+        <div class="bar-track"><div class="bar-fill ${results['__manual'].sentimentScore>0.2?'green':results['__manual'].sentimentScore<-0.2?'red':'amber'}" style="width:${((results['__manual'].sentimentScore+1)/2)*100}%"></div></div>
+        <span class="score-val" style="color:${results['__manual'].sentimentScore>0.2?'var(--green)':results['__manual'].sentimentScore<-0.2?'var(--red)':'var(--amber)'}">${(results['__manual'].sentimentScore>0?'+':'')+results['__manual'].sentimentScore.toFixed(2)}</span>
+      </div>
+      <div class="result-mini-summary">${results['__manual'].summary}</div>
+      <button class="view-detail-link" onclick="selectTickerManual()">View full breakdown →</button>
+    </div>` : '';
+  return `
+    <div class="analyze-wrap">
+      <h3>Analyze any posts manually</h3>
+      <p>Paste in tweets, Reddit posts, StockTwits, news headlines — one per line. Pick a ticker and the AI will score the sentiment instantly.</p>
+      <div class="analyze-controls">
+        <select class="ticker-select" id="manualTicker">${opts}</select>
+        <input type="text" class="search-input" id="customTicker" placeholder="Or type any ticker" style="max-width:160px;text-transform:uppercase" maxlength="10"/>
+        <button class="btn" id="analyzeBtn" onclick="analyzeManual()">Analyze →</button>
+      </div>
+      <textarea class="paste-area" id="manualText" rows="10" placeholder="Paste posts here — one per line:&#10;&#10;$IREN just signed a massive HPC contract. AI infrastructure pick-and-shovel play.&#10;Iris Energy Q3 missed estimates. Starting to question the pivot thesis.&#10;$IREN power capacity moat is real. Nobody talks about how hard grid access is."></textarea>
+      ${loading['__manual'] ? `<div class="shimmer" style="margin-top:12px"><div class="shimmer-bar"></div></div>` : ''}
+      ${mini}
+    </div>`;
+}
+
+function attachAnalyzeListeners() {
+  // no-op; listeners are inline
+}
+
+async function analyzeManual() {
+  const custom = document.getElementById('customTicker')?.value.trim().toUpperCase().replace(/^\$/,'');
+  const select = document.getElementById('manualTicker')?.value;
+  const ticker = custom || select;
+  const text   = document.getElementById('manualText')?.value || '';
+  const posts  = text.split('\n').map(l=>l.trim()).filter(Boolean);
+  if (!posts.length || !ticker) return;
+
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('analyzeBtn').textContent = 'Analyzing...';
+  loading['__manual'] = true;
+  render();
+
+  const block = posts.slice(0,30).map((t,i)=>`${i+1}. "${t}"`).join('\n');
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content:
+          `You are a financial sentiment analysis engine. Analyze these ${posts.length} social media posts about $${ticker} and return ONLY valid JSON.\n\nPosts:\n${block}\n\nReturn exactly:\n{"ticker":"${ticker}","sentimentScore":<float -1 to 1>,"signal":<"STRONG_BUY"|"BUY"|"NEUTRAL"|"SELL"|"STRONG_SELL">,"bullCount":<int>,"bearCount":<int>,"neutralCount":<int>,"keyThemes":[<3-5 strings>],"topBullish":<string or null>,"topBearish":<string or null>,"summary":<2 sentences>,"confidence":<"high"|"medium"|"low">,"analyzedAt":"${new Date().toISOString()}"}`
+        }]
+      })
+    });
+    const data = await res.json();
+    const parsed = JSON.parse(data.content?.find(b=>b.type==='text')?.text.replace(/```json|```/g,'').trim() || '{}');
+    results['__manual'] = parsed;
+    activityLog.unshift({ ticker, time: new Date().toLocaleTimeString(), signal: parsed.signal, postCount: posts.length, isManual: true, score: parsed.sentimentScore });
+  } catch(e) {
+    results['__manual'] = { error: true };
+  }
+  loading['__manual'] = false;
+  switchTab('analyze');
+
+  const btn = document.getElementById('analyzeBtn');
+  if (btn) { btn.disabled = false; btn.textContent = 'Analyze →'; }
+}
+
+function selectTickerManual() {
+  const r = results['__manual'];
+  if (!r || r.error) return;
+  const ticker = r.ticker;
+  if (!results[ticker]) results[ticker] = r;
+  if (!WATCHLIST.find(w=>w.ticker===ticker)) WATCHLIST.push({ticker, name: ticker});
+  selectedTicker = ticker;
+  activeTab = 'overview';
+  render();
+}
+
+// ── LOG ───────────────────────────────────────────────────────────────────
+function renderLog() {
+  if (!activityLog.length) return `
+    <div class="log-wrap">
+      <h3>Activity log</h3>
+      <div class="log-empty">No analyses run yet. Hit "Full Scan" or analyze a ticker.</div>
+    </div>`;
+  const rows = activityLog.map(e => `
+    <div class="log-entry">
+      <div class="log-left">
+        <span class="log-ticker">$${e.ticker}</span>
+        <span class="signal signal-${e.signal}" style="font-size:9px">${e.signal.replace('_',' ')}</span>
+        <span class="log-count">${e.postCount} posts</span>
+        ${e.isManual ? `<span class="log-manual">MANUAL</span>` : ''}
+      </div>
+      <span class="log-time">${e.time}</span>
+    </div>`).join('');
+  return `<div class="log-wrap"><h3>Activity log</h3>${rows}</div>`;
+}
+
+// ── SAMPLE POSTS (used for demo + individual analyze) ─────────────────────
+const SAMPLE_POSTS = {
+  IREN: [
+    '$IREN just signed another massive HPC contract. Pick-and-shovel play for AI infrastructure. Accumulating hard.',
+    'Iris Energy pivoting perfectly from BTC mining to AI compute. $IREN balance sheet looks clean, management executing.',
+    '$IREN down 8% today on no news. Shaking out weak hands before next leg up. Adding.',
+    'Anyone watching $IREN? Power capacity is the real moat here. Grid access is brutal to get.',
+    '$IREN disappointing quarter. Revenue missed. Starting to question the AI pivot thesis.',
+  ],
+  PLTR: [
+    '$PLTR AIP is genuinely different. Enterprises deploying faster than anything in 10 years.',
+    'Palantir government contracts are a moat nobody else can touch. $PLTR is a buy under $40.',
+    '$PLTR valuation is insane. 30x revenue for 20% growth? Hard pass.',
+    'Alex Karp said something that made me rethink $PLTR. This is a defense intelligence company, not software.',
+    '$PLTR added to S&P 500. Institutions forced to buy. Supply/demand strongly favors bulls.',
+  ],
+  CRWD: [
+    '$CRWD Falcon platform wins accelerating. Every Fortune 500 I talk to is consolidating on CrowdStrike.',
+    'July 2024 outage is ancient history. $CRWD customer retention above 95%. This thing is a juggernaut.',
+    '$CRWD growing ARR 30%+ with Rule of 60. Best-in-class cybersecurity at scale.',
+    'SentinelOne gaining share on $CRWD in mid-market. Watch the NRR trend.',
+    '$CRWD beat and raise. Federal momentum accelerating. Adding here.',
+  ],
+  TSLA: [
+    '$TSLA Optimus is the sleeper catalyst nobody is modeling. 1M humanoid robots by 2030 is conservative.',
+    'Tesla energy storage alone is worth more than the market cap. $TSLA massively undervalued.',
+    '$TSLA losing EV share to BYD in China and Europe. Brand damage from Elon is real.',
+    'FSD v12 is legitimately impressive. $TSLA autonomous revenue closer than bears think.',
+    '$TSLA margins compressing. Price cuts are not a growth strategy. Starting to trim.',
+  ],
+  AFRM: [
+    '$AFRM BNPL taking wallet share from credit cards faster than expected. GMV growth is the story.',
+    'Affirm Shopify and Apple Pay integrations give $AFRM distribution no competitor can replicate.',
+    '$AFRM unit economics finally working. Loss rates normalizing.',
+    'Rising rates are structural headwind for $AFRM. Cost of capital goes up every Fed hike.',
+    '$AFRM delinquencies trending up. BNPL gets stress-tested in a slowdown.',
+  ],
+  APLD: [
+    '$APLD just announced 400MW AI data center capacity. Dark horse neocloud play.',
+    'Applied Digital margins improving QoQ. $APLD executing on HPC buildout.',
+    '$APLD balance sheet concerns me. Heavy capex with thin revenue coverage.',
+    'AI data center land grab is real. $APLD has power contracts that matter.',
+    '$APLD management credibility improving. Last two quarters show operational discipline.',
+  ],
+  IBIT: [
+    '$IBIT hitting record inflows again. Institutional bitcoin demand is structural.',
+    'BlackRock $IBIT fastest growing ETF in history. That is institutions allocating.',
+    '$IBIT selling off with risk assets. Correlation to QQQ remains high.',
+    'Corporate treasuries adding $IBIT exposure. MicroStrategy playbook going mainstream.',
+    '$IBIT options volume exploding. Market makers hedging something big.',
+  ],
+};
+</script>
+</body>
+</html>
