@@ -693,6 +693,42 @@
   .btn-remove:hover { background: #3b0000; }
   .modal-footer { display: flex; justify-content: flex-end; gap: 8px; }
 
+
+  /* ── TREND & COMPOSITE ── */
+  .trend-arrow { font-size: 14px; font-weight: 800; margin-right: 4px; }
+  .trend-up    { color: #22c55e; }
+  .trend-down  { color: #ef4444; }
+  .trend-flat  { color: #f59e0b; }
+  .composite-score {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 22px; font-weight: 800; line-height: 1;
+  }
+  .delta-pill {
+    font-size: 9px; font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700; padding: 2px 6px; border-radius: 10px;
+    display: inline-block; margin-left: 4px;
+  }
+  .delta-up   { background: #052e16; color: #4ade80; }
+  .delta-down { background: #3b0000; color: #ef4444; }
+  .delta-flat { background: #1c1917; color: #a8a29e; }
+  .inst-row {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--border); font-size: 10px; color: var(--muted);
+  }
+  .inst-row .chip {
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 2px 8px; font-size: 9px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .chip-bull { border-color: #14532d; color: #4ade80; background: #052e16; }
+  .chip-bear { border-color: #7f1d1d; color: #ef4444; background: #3b0000; }
+  .chip-neut { border-color: #292524; color: #a8a29e; }
+  .vol-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 10px; color: var(--muted); margin-top: 6px;
+  }
+
 </style>
 </head>
 <body>
@@ -1006,30 +1042,49 @@ function renderCard(ticker, name) {
   if (isLoading) {
     body = `<div class="shimmer"><div class="shimmer-bar"></div></div><div style="font-size:11px;color:var(--muted)">Analyzing posts...</div>`;
   } else if (r && !r.error) {
-    const pct = ((r.sentimentScore + 1) / 2) * 100;
-    const barClass = r.sentimentScore > 0.2 ? 'green' : r.sentimentScore < -0.2 ? 'red' : 'amber';
-    const valColor = r.sentimentScore > 0.2 ? 'var(--green)' : r.sentimentScore < -0.2 ? 'var(--red)' : 'var(--amber)';
-    const scoreStr = (r.sentimentScore > 0 ? '+' : '') + r.sentimentScore.toFixed(2);
-    const themes = (r.keyThemes||[]).slice(0,3).map(t => `<span class="theme">${t}</span>`).join('');
-    const instStrip = inst ? `
-      <div class="card-inst">
-        <span>Flow: <b>${inst.netChange}</b></span>
-        <span>Buyer: <b>${inst.topBuyer}</b></span>
-        <span>Own: <b>${inst.ownership}</b></span>
-      </div>` : '';
+    const composite   = r.compositeScore ?? r.sentimentScore;
+    const pct          = ((composite + 1) / 2) * 100;
+    const barClass     = composite > 0.15 ? 'green' : composite < -0.15 ? 'red' : 'amber';
+    const valColor     = composite > 0.15 ? 'var(--green)' : composite < -0.15 ? 'var(--red)' : 'var(--amber)';
+    const scoreStr     = (composite > 0 ? '+' : '') + composite.toFixed(2);
+    const arrow        = r.arrow || '→';
+    const arrowClass   = arrow === '↑' ? 'trend-up' : arrow === '↓' ? 'trend-down' : 'trend-flat';
+    const delta        = r.sentimentDelta || 0;
+    const deltaClass   = delta > 0.05 ? 'delta-up' : delta < -0.05 ? 'delta-down' : 'delta-flat';
+    const deltaStr     = (delta > 0 ? '+' : '') + delta.toFixed(2);
+    const themes       = (r.keyThemes||[]).slice(0,3).map(t => `<span class="theme">${t}</span>`).join('');
+    const instData     = r.institutional;
+    const instChip     = instData ? (() => {
+      const cls = instData.instSentiment === 'bullish' ? 'chip-bull' : instData.instSentiment === 'bearish' ? 'chip-bear' : 'chip-neut';
+      const lbl = instData.instSentiment === 'bullish' ? '▲ INST BUYING' : instData.instSentiment === 'bearish' ? '▼ INST SELLING' : '— INST NEUTRAL';
+      return `<span class="chip ${cls}">${lbl}</span>`;
+    })() : '';
+    const insiderChip  = instData?.insiderSignal ? (() => {
+      const cls = instData.insiderSignal === 'bullish' ? 'chip-bull' : instData.insiderSignal === 'bearish' ? 'chip-bear' : 'chip-neut';
+      const lbl = instData.insiderSignal === 'bullish' ? '▲ INSIDER BUY' : instData.insiderSignal === 'bearish' ? '▼ INSIDER SELL' : '— INSIDER MIX';
+      return `<span class="chip ${cls}">${lbl}</span>`;
+    })() : '';
+    const volDelta     = r.volumeDelta || 0;
+    const volStr       = volDelta > 0 ? `+${volDelta} posts vs yesterday` : volDelta < 0 ? `${volDelta} posts vs yesterday` : 'volume stable';
     body = `
-      <div class="score-row">
+      <div class="score-row" style="margin-bottom:6px">
         <div class="bar-track"><div class="bar-fill ${barClass}" style="width:${pct}%"></div></div>
+        <span class="trend-arrow ${arrowClass}">${arrow}</span>
         <span class="score-val" style="color:${valColor}">${scoreStr}</span>
+        <span class="delta-pill ${deltaClass}">${deltaStr}</span>
       </div>
-      <div class="card-summary">${r.summary || ''}</div>
+      <div class="vol-row">
+        <span style="color:var(--muted)">📊 ${r.tweetCount||0} posts</span>
+        <span style="color:${volDelta>0?'var(--green)':volDelta<0?'var(--red)':'var(--muted)'}">${volStr}</span>
+      </div>
+      <div class="card-summary" style="margin-top:8px">${r.summary || ''}</div>
       <div class="themes">${themes}</div>
-      <div class="card-counts">
+      <div class="card-counts" style="margin-top:6px">
         <span class="g">▲ ${r.bullCount} bull</span>
         <span class="r">▼ ${r.bearCount} bear</span>
         <span>— ${r.neutralCount} neutral</span>
       </div>
-      ${instStrip}`;
+      ${instData ? `<div class="inst-row">${instChip}${insiderChip}<span style="color:var(--muted)">${instData.uniqueFilers||0} inst. filers · ${instData.quarterCovered||''}</span></div>` : ''}`;
   } else {
     const hasSample = !!SAMPLE_POSTS[ticker];
     body = `
@@ -1067,22 +1122,40 @@ function selectTicker(ticker) {
 function renderDetail(ticker) {
   const r = results[ticker];
   const inst = INST_DATA[ticker];
-  const pct = ((r.sentimentScore + 1) / 2) * 100;
-  const barClass = r.sentimentScore > 0.2 ? 'green' : r.sentimentScore < -0.2 ? 'red' : 'amber';
-  const valColor = r.sentimentScore > 0.2 ? 'var(--green)' : r.sentimentScore < -0.2 ? 'var(--red)' : 'var(--amber)';
+  const composite = r.compositeScore ?? r.sentimentScore;
+  const pct = ((composite + 1) / 2) * 100;
+  const barClass = composite > 0.15 ? 'green' : composite < -0.15 ? 'red' : 'amber';
+  const valColor = composite > 0.15 ? 'var(--green)' : composite < -0.15 ? 'var(--red)' : 'var(--amber)';
   const themes = (r.keyThemes||[]).map(t => `<span class="theme">${t}</span>`).join('');
   const time = r.analyzedAt ? new Date(r.analyzedAt).toLocaleTimeString() : '—';
 
-  const instSection = inst ? `
+  const instEd = r.institutional;
+  const instSection = instEd ? `
     <div class="inst-box">
-      <div class="box-label">Institutional Activity — 13F / Latest Quarter</div>
-      <div class="detail-grid4">
-        <div><div class="box-label">Net Share Change</div><div class="box-val">${inst.netChange}</div></div>
-        <div><div class="box-label">Largest Buyer</div><div class="box-val">${inst.topBuyer}</div></div>
-        <div><div class="box-label">Largest Seller</div><div class="box-val">${inst.topSeller}</div></div>
-        <div><div class="box-label">Inst. Ownership</div><div class="box-val">${inst.ownership}</div></div>
+      <div class="box-label">Institutional Activity — SEC EDGAR 13F Data · ${instEd.quarterCovered||''}</div>
+      <div class="detail-grid4" style="margin-bottom:12px">
+        <div>
+          <div class="box-label">13F Filings Found</div>
+          <div class="box-val">${instEd.filingCount||0}</div>
+          <div class="box-sub">this quarter</div>
+        </div>
+        <div>
+          <div class="box-label">Unique Filers</div>
+          <div class="box-val">${instEd.uniqueFilers||0}</div>
+          <div class="box-sub">institutions</div>
+        </div>
+        <div>
+          <div class="box-label">Inst. Sentiment</div>
+          <div class="box-val" style="color:${instEd.instSentiment==='bullish'?'var(--green)':instEd.instSentiment==='bearish'?'var(--red)':'var(--amber)'}">${(instEd.instSentiment||'neutral').toUpperCase()}</div>
+        </div>
+        <div>
+          <div class="box-label">Insider Signal</div>
+          <div class="box-val" style="color:${instEd.insiderSignal==='bullish'?'var(--green)':instEd.insiderSignal==='bearish'?'var(--red)':'var(--amber)'}">${(instEd.insiderSignal||'neutral').toUpperCase()}</div>
+        </div>
       </div>
-      <div class="inst-note">⚠ Sample institutional data shown. Live data requires Quiver Quant or SEC EDGAR integration (see setup guide Phase 2).</div>
+      ${instEd.topFilers && instEd.topFilers !== '—' ? `<div style="font-size:11px;color:#94a3b8;margin-bottom:8px">Top filers: ${instEd.topFilers}</div>` : ''}
+      ${instEd.insiderNote ? `<div style="font-size:11px;color:#64748b;margin-bottom:8px">${instEd.insiderNote}</div>` : ''}
+      <div class="inst-note">📡 Source: SEC EDGAR (free) — 13F filings + Form 4 insider transactions</div>
     </div>` : '';
 
   return `
@@ -1098,10 +1171,16 @@ function renderDetail(ticker) {
 
       <div class="detail-grid2">
         <div class="box">
-          <div class="box-label">Sentiment Score</div>
-          <div class="score-row" style="margin-bottom:0">
+          <div class="box-label">Composite Bull/Bear Score</div>
+          <div class="score-row" style="margin-bottom:6px">
             <div class="bar-track"><div class="bar-fill ${barClass}" style="width:${pct}%"></div></div>
-            <span class="score-val" style="color:${valColor}">${(r.sentimentScore>0?'+':'') + r.sentimentScore.toFixed(2)}</span>
+            <span class="trend-arrow ${r.arrow==='↑'?'trend-up':r.arrow==='↓'?'trend-down':'trend-flat'}">${r.arrow||'→'}</span>
+            <span class="score-val" style="color:${valColor}">${(composite>0?'+':'') + composite.toFixed(2)}</span>
+          </div>
+          <div style="font-size:10px;color:var(--muted)">
+            Sentiment: ${(r.sentimentScore>0?'+':'')+r.sentimentScore.toFixed(2)} · 
+            Trend: ${r.sentimentTrend||'stable'} · 
+            Vol Δ: ${r.volumeDelta>0?'+':''}${r.volumeDelta||0} posts
           </div>
         </div>
         <div class="box">
