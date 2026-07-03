@@ -1,0 +1,13 @@
+{
+  "name": "signal-stock-sentiment",
+  "version": "1.0.0",
+  "description": "Daily stock sentiment scanner — X/Twitter + institutional flow",
+  "type": "module",
+  "scripts": {
+    "scan": "node scripts/run-scan.js",
+    "test": "TWITTER_BEARER_TOKEN=test ANTHROPIC_API_KEY=test node scripts/run-scan.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.24.0"
+  }
+}
