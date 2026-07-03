@@ -1,1 +1,43 @@
+# .github/workflows/daily-sentiment.yml
+# Runs every morning at 7:00 AM CT (13:00 UTC) on weekdays
+# Fetches tweets for each ticker, runs AI sentiment analysis, writes results to data/results.json
+
+name: Daily Stock Sentiment Scan
+
+on:
+  schedule:
+    - cron: "0 13 * * 1-5"   # 7am CT Mon–Fri
+  workflow_dispatch:           # Allow manual trigger from GitHub UI
+
+jobs:
+  sentiment-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write          # Needed to commit results.json back to repo
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run sentiment scan
+        env:
+          TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/run-scan.js
+
+      - name: Commit results
+        run: |
+          git config user.name "Signal Bot"
+          git config user.email "signal-bot@users.noreply.github.com"
+          git add data/results.json data/history/
+          git diff --cached --quiet || git commit -m "Daily scan: $(date +'%Y-%m-%d')"
+          git push
 
