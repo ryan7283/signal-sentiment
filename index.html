@@ -711,7 +711,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // CONFIG — edit GITHUB_USER and GITHUB_REPO to match yours after setup
 // ═══════════════════════════════════════════════════════════════════════════
-const GITHUB_USER = 'YOURUSERNAME';         // ← replace with your GitHub username
+const GITHUB_USER = 'ryan7283';         // ← replace with your GitHub username
 const GITHUB_REPO = 'signal-sentiment';     // ← replace if you named it differently
 const RESULTS_URL = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/data/results.json`;
 
@@ -754,7 +754,7 @@ let dataSource = 'demo'; // 'github' | 'demo'
 
 async function loadGitHubResults() {
   // Try to load real results from GitHub Pages / raw.githubusercontent.com
-  if (GITHUB_USER === 'YOURUSERNAME') {
+  if (GITHUB_USER === 'ryan7283') {
     dataSource = 'demo';
     document.getElementById('lastUpdated').textContent = 'Demo mode — add your GitHub username to activate';
     return;
