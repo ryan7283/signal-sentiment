@@ -786,7 +786,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 const GITHUB_USER  = 'ryan7283';
 const GITHUB_REPO  = 'signal-sentiment';
-const RESULTS_URL  = `https://cdn.jsdelivr.net/gh/${GITHUB_USER}/${GITHUB_REPO}@main/data/results.json`;
+const RESULTS_URL  = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/data/results.json`;
 const WATCHLIST_URL = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/watchlist.json`;
 
 // ── GITHUB TOKEN (needed to save watchlist changes back to GitHub) ──────────
@@ -907,15 +907,17 @@ async function saveWatchlistToGitHub() {
 }
 
 async function loadGitHubResults() {
-  // Try to load real results from GitHub Pages / raw.githubusercontent.com
   if (GITHUB_USER === 'REPLACEME') {
     dataSource = 'demo';
     document.getElementById('lastUpdated').textContent = 'Demo mode — add your GitHub username to activate';
     return;
   }
   try {
-    const res = await fetch(RESULTS_URL + '?t=' + Date.now());
-    if (!res.ok) throw new Error('not found');
+    // Use GitHub API with raw accept header — always fresh, no CDN caching
+    const headers = { 'Accept': 'application/vnd.github.v3.raw', 'Cache-Control': 'no-cache' };
+    if (GITHUB_TOKEN) headers['Authorization'] = `token ${GITHUB_TOKEN}`;
+    const res = await fetch(RESULTS_URL + '?t=' + Date.now(), { headers });
+    if (!res.ok) throw new Error('GitHub API returned ' + res.status);
     const data = await res.json();
     if (data.results && data.results.length > 0) {
       data.results.forEach(r => { results[r.ticker] = r; });
@@ -927,8 +929,9 @@ async function loadGitHubResults() {
       updatePulse();
     }
   } catch(e) {
+    console.error('loadGitHubResults error:', e.message);
     dataSource = 'demo';
-    document.getElementById('lastUpdated').textContent = 'No scan data yet — run your first scan';
+    document.getElementById('lastUpdated').textContent = 'Could not load scan data — ' + e.message;
   }
 }
 
