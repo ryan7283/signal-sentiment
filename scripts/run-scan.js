@@ -239,6 +239,83 @@ function buildEmptyInstitutional(ticker) {
 }
 
 
+// ─── SENTIMENT ANALYSIS ──────────────────────────────────────────────────────
+
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+async function analyzeSentiment(ticker, name, type, sector, tweets, yesterday) {
+  if (!tweets.length) {
+    const trend = calcTrend(0, yesterday);
+    return {
+      ticker, name, type, sector,
+      sentimentScore: 0, signal: "NEUTRAL",
+      bullCount: 0, bearCount: 0, neutralCount: 0,
+      keyThemes: [], topBullish: null, topBearish: null,
+      summary: "No posts found for this ticker in the last 24 hours.",
+      confidence: "low", tweetCount: 0,
+      volumeTrend: "silent", sentimentTrend: trend.trend,
+      sentimentDelta: 0, volumeDelta: 0, arrow: "→",
+      compositeScore: 0, analyzedAt: new Date().toISOString(),
+    };
+  }
+
+  const tweetBlock = tweets.slice(0, 30).map((t, i) => `${i + 1}. "${t}"`).join("\n");
+  const context    = type === "etf"
+    ? `This is an ETF (${sector}). Focus on fund flow sentiment, sector momentum, and macro themes.`
+    : `This is a stock in the ${sector} sector. Focus on company-specific sentiment, earnings expectations, and competitive positioning.`;
+
+  const message = await anthropic.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 1000,
+    messages: [{
+      role: "user",
+      content: `You are a financial sentiment analysis engine. ${context}
+
+Analyze these ${tweets.length} recent social media posts about $${ticker} (${name}) and return ONLY valid JSON — no markdown, no preamble.
+
+Posts:
+${tweetBlock}
+
+Return exactly:
+{
+  "ticker": "${ticker}",
+  "name": "${name}",
+  "sentimentScore": <float -1.0 to 1.0>,
+  "signal": <"STRONG_BUY"|"BUY"|"NEUTRAL"|"SELL"|"STRONG_SELL">,
+  "bullCount": <integer>,
+  "bearCount": <integer>,
+  "neutralCount": <integer>,
+  "keyThemes": [<3-5 short theme strings>],
+  "topBullish": <most bullish post verbatim or null>,
+  "topBearish": <most bearish post verbatim or null>,
+  "summary": <2-sentence analyst-quality summary>,
+  "volumeTrend": <"surging"|"increasing"|"stable"|"declining"|"silent">,
+  "confidence": <"high"|"medium"|"low">
+}`
+    }],
+  });
+
+  const raw    = message.content.find(b => b.type === "text")?.text || "{}";
+  const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
+  const trend  = calcTrend(parsed.sentimentScore, yesterday);
+
+  const trendBonus  = trend.sentimentDelta > 0 ? 0.1 : trend.sentimentDelta < 0 ? -0.1 : 0;
+  const volumeBonus = trend.volumeDelta > 5 ? 0.1 : trend.volumeDelta < -5 ? -0.1 : 0;
+  const composite   = parseFloat(((parsed.sentimentScore * 0.6) + trendBonus + volumeBonus).toFixed(3));
+
+  return {
+    ...parsed, type, sector,
+    tweetCount:     tweets.length,
+    sentimentTrend: trend.trend,
+    sentimentDelta: trend.sentimentDelta,
+    volumeDelta:    trend.volumeDelta,
+    arrow:          trend.arrow,
+    compositeScore: Math.max(-1, Math.min(1, composite)),
+    analyzedAt:     new Date().toISOString(),
+  };
+}
+
+
 // ─── MAIN ────────────────────────────────────────────────────────────────────
 
 async function main() {
