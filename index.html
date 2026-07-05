@@ -784,9 +784,10 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // CONFIG — edit GITHUB_USER and GITHUB_REPO to match yours after setup
 // ═══════════════════════════════════════════════════════════════════════════
-const GITHUB_USER  = 'ryan7283';
-const GITHUB_REPO  = 'signal-sentiment';
-const RESULTS_URL  = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/data/results.json`;
+const GITHUB_USER   = 'ryan7283';
+const GITHUB_REPO   = 'signal-sentiment';
+// GitHub Pages serves files directly — no auth needed, cache-busted with timestamp
+const RESULTS_URL   = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/data/results.json`;
 const WATCHLIST_URL = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/watchlist.json`;
 
 // ── GITHUB TOKEN (needed to save watchlist changes back to GitHub) ──────────
@@ -914,8 +915,9 @@ async function loadGitHubResults() {
   }
   try {
     // Use GitHub API with raw accept header — always fresh, no CDN caching
+    // Direct GitHub Pages fetch — no auth needed, cache busted with timestamp
     const res = await fetch(RESULTS_URL + '?t=' + Date.now());
-    if (!res.ok) throw new Error('GitHub API returned ' + res.status);
+    if (!res.ok) throw new Error('GitHub Pages returned ' + res.status);
     const data = await res.json();
     if (data.results && data.results.length > 0) {
       data.results.forEach(r => { results[r.ticker] = r; });
@@ -1166,7 +1168,17 @@ function renderCard(ticker, name) {
         <span class="r">▼ ${r.bearCount} bear</span>
         <span>— ${r.neutralCount} neutral</span>
       </div>
-      ${instData ? `<div class="inst-row">${instChip}${insiderChip}<span style="color:var(--muted)">${instData.uniqueFilers||0} inst. filers · ${instData.quarterCovered||''}</span></div>` : ''}`;
+      ${instData && instData.available ? (() => {
+        const congress = instData.congressSignal === 'bullish' ? '<span class="chip chip-bull">▲ CONGRESS BUY</span>'
+                       : instData.congressSignal === 'bearish' ? '<span class="chip chip-bear">▼ CONGRESS SELL</span>'
+                       : '<span class="chip chip-neut">— CONGRESS</span>';
+        const hf = instData.hedgeFundSignal === 'bullish' ? '<span class="chip chip-bull">▲ FUNDS BUYING</span>'
+                 : instData.hedgeFundSignal === 'bearish' ? '<span class="chip chip-bear">▼ FUNDS SELLING</span>'
+                 : '';
+        const gov = instData.hasGovContracts ? '<span class="chip chip-bull">🏛 GOV CONTRACTS</span>' : '';
+        return `<div class="inst-row">${instChip}${insiderChip}${congress}${hf}${gov}</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:4px">${instData.quarterCovered||''} · Quiver Quant</div>`;
+      })() : ''}`;
   } else {
     const hasSample = !!SAMPLE_POSTS[ticker];
     body = `
@@ -1174,7 +1186,10 @@ function renderCard(ticker, name) {
       ${hasSample ? `<button class="btn-small" onclick="event.stopPropagation();analyzeTicker('${ticker}', SAMPLE_POSTS['${ticker}'])">Analyze sample data →</button>` : ''}`;
   }
 
-  const instBadge = inst ? `<span class="inst-badge inst-${inst.sentiment}">${inst.sentiment === 'bullish' ? 'INST BUYING' : inst.sentiment === 'bearish' ? 'INST SELLING' : inst.sentiment === 'na' ? 'PRIVATE' : 'INST NEUTRAL'}</span>` : '';
+  // Use live institutional data from results if available
+  const liveInst = r?.institutional;
+  const instSig = liveInst?.instSentiment || inst?.sentiment || 'neutral';
+  const instBadge = `<span class="inst-badge inst-${instSig}">${instSig === 'bullish' ? 'INST BUYING' : instSig === 'bearish' ? 'INST SELLING' : instSig === 'na' ? 'PRIVATE' : 'INST NEUTRAL'}</span>`;
   const sigBadge = isLoading ? `<span class="signal signal-LOADING">ANALYZING</span>` :
                    r && !r.error ? `<span class="signal signal-${r.signal}">${r.signal.replace('_',' ')}</span>` :
                    `<span class="signal signal-PENDING">PENDING</span>`;
@@ -1212,32 +1227,50 @@ function renderDetail(ticker) {
   const time = r.analyzedAt ? new Date(r.analyzedAt).toLocaleTimeString() : '—';
 
   const instEd = r.institutional;
-  const instSection = instEd ? `
+  const sigColor = s => s === 'bullish' ? 'var(--green)' : s === 'bearish' ? 'var(--red)' : 'var(--amber)';
+  const sigLabel = s => (s || 'neutral').toUpperCase();
+
+  const instSection = instEd && instEd.available ? `
     <div class="inst-box">
-      <div class="box-label">Institutional Activity — SEC EDGAR 13F Data · ${instEd.quarterCovered||''}</div>
-      <div class="detail-grid4" style="margin-bottom:12px">
+      <div class="box-label">Institutional Intelligence · ${instEd.quarterCovered||''} · Quiver Quant</div>
+
+      <div class="detail-grid4" style="margin-bottom:14px">
         <div>
-          <div class="box-label">13F Filings Found</div>
-          <div class="box-val">${instEd.filingCount||0}</div>
-          <div class="box-sub">this quarter</div>
-        </div>
-        <div>
-          <div class="box-label">Unique Filers</div>
-          <div class="box-val">${instEd.uniqueFilers||0}</div>
-          <div class="box-sub">institutions</div>
-        </div>
-        <div>
-          <div class="box-label">Inst. Sentiment</div>
-          <div class="box-val" style="color:${instEd.instSentiment==='bullish'?'var(--green)':instEd.instSentiment==='bearish'?'var(--red)':'var(--amber)'}">${(instEd.instSentiment||'neutral').toUpperCase()}</div>
+          <div class="box-label">Congress Signal</div>
+          <div class="box-val" style="color:${sigColor(instEd.congressSignal)}">${sigLabel(instEd.congressSignal)}</div>
+          <div class="box-sub">${instEd.congressBuys||0} buys · ${instEd.congressSells||0} sells</div>
         </div>
         <div>
           <div class="box-label">Insider Signal</div>
-          <div class="box-val" style="color:${instEd.insiderSignal==='bullish'?'var(--green)':instEd.insiderSignal==='bearish'?'var(--red)':'var(--amber)'}">${(instEd.insiderSignal||'neutral').toUpperCase()}</div>
+          <div class="box-val" style="color:${sigColor(instEd.insiderSignal)}">${sigLabel(instEd.insiderSignal)}</div>
+          <div class="box-sub">${instEd.insiderNote ? instEd.insiderNote.slice(0,40)+'...' : 'No data'}</div>
+        </div>
+        <div>
+          <div class="box-label">Hedge Funds 13F</div>
+          <div class="box-val" style="color:${sigColor(instEd.hedgeFundSignal)}">${sigLabel(instEd.hedgeFundSignal)}</div>
+          <div class="box-sub">${instEd.hedgeFundBuys||0} buying · ${instEd.hedgeFundSells||0} selling</div>
+        </div>
+        <div>
+          <div class="box-label">Off-Exchange</div>
+          <div class="box-val" style="color:${sigColor(instEd.offExchangeSignal)}">${sigLabel(instEd.offExchangeSignal||'neutral')}</div>
+          <div class="box-sub">Dark pool signal</div>
         </div>
       </div>
-      ${instEd.topFilers && instEd.topFilers !== '—' ? `<div style="font-size:11px;color:#94a3b8;margin-bottom:8px">Top filers: ${instEd.topFilers}</div>` : ''}
-      ${instEd.insiderNote ? `<div style="font-size:11px;color:#64748b;margin-bottom:8px">${instEd.insiderNote}</div>` : ''}
-      <div class="inst-note">📡 Source: SEC EDGAR (free) — 13F filings + Form 4 insider transactions</div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+        ${instEd.congressNote ? `<div style="font-size:11px;color:#94a3b8">🏛 <b>Congress:</b> ${instEd.congressNote}</div>` : ''}
+        ${instEd.insiderNote ? `<div style="font-size:11px;color:#94a3b8">👤 <b>Insiders:</b> ${instEd.insiderNote}</div>` : ''}
+        ${instEd.hedgeFundNote ? `<div style="font-size:11px;color:#94a3b8">🏦 <b>Hedge Funds:</b> ${instEd.hedgeFundNote}</div>` : ''}
+        ${instEd.hasGovContracts ? `<div style="font-size:11px;color:#94a3b8">📋 <b>Gov Contracts:</b> ${instEd.govContractNote}</div>` : ''}
+        ${instEd.lobbyingTotal > 0 ? `<div style="font-size:11px;color:#94a3b8">💼 <b>Lobbying:</b> ${instEd.lobbyingNote}</div>` : ''}
+        ${instEd.offExchangeNote && instEd.offExchangeNote !== 'No off-exchange data found' ? `<div style="font-size:11px;color:#94a3b8">📊 <b>Dark Pool:</b> ${instEd.offExchangeNote}</div>` : ''}
+      </div>
+
+      <div class="inst-note">📡 Source: Quiver Quant — Congressional trades, insider Form 4, hedge fund 13F, gov contracts, lobbying, off-exchange</div>
+    </div>` : instEd && !instEd.available ? `
+    <div class="inst-box">
+      <div class="box-label">Institutional Intelligence</div>
+      <div style="font-size:12px;color:var(--muted);padding:8px 0">${instEd.instNote || 'No institutional data available'}</div>
     </div>` : '';
 
   return `
