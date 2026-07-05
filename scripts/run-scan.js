@@ -187,14 +187,15 @@ async function fetchInstitutionalData(ticker, type) {
 
   if (!apiKey) return buildNoKeyInstitutional();
 
-  // CONFIRMED AUTH: Quiver uses "Token <key>" not "Bearer <key>"
+  // CONFIRMED from official Quiver Python source: uses "Token <key>" not "Bearer"
   const headers = {
-    Accept: "application/json",
+    Accept:        "application/json",
     Authorization: `Token ${apiKey}`,
   };
 
   // ── 1. Congressional Trading ──────────────────────────────────────────────
-  // Endpoint: /beta/historical/congresstrading/{ticker}
+  // Confirmed endpoint: /beta/historical/congresstrading/{ticker}
+  // Confirmed fields: Representative, TransactionDate, Transaction ("Purchase"/"Sale"), Range, House, Party
   let congressSignal = "neutral";
   let congressNote   = "No congressional trades found";
   let congressBuys = 0, congressSells = 0;
@@ -206,12 +207,15 @@ async function fetchInstitutionalData(ticker, type) {
     );
     if (res.ok) {
       const data   = await res.json();
-      console.log(`  [${ticker}] Congress: ${data?.length || 0} records`);
       const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 365);
-      const recent = (data || []).filter(t => new Date(t.TransactionDate || t.Date) > cutoff);
-      const buys   = recent.filter(t => (t.Transaction || "").toLowerCase().includes("purchase"));
-      const sells  = recent.filter(t => (t.Transaction || "").toLowerCase().includes("sale"));
+      const recent = (data || []).filter(t => {
+        const d = new Date(t.TransactionDate || t.Filed || t.Date);
+        return d > cutoff;
+      });
+      const buys  = recent.filter(t => (t.Transaction || "").toLowerCase().includes("purchase"));
+      const sells = recent.filter(t => (t.Transaction || "").toLowerCase().includes("sale"));
       congressBuys = buys.length; congressSells = sells.length;
+      console.log(`  [${ticker}] Congress: ${data.length} total, ${recent.length} recent — ${buys.length} buys, ${sells.length} sells`);
       if (buys.length > sells.length && buys.length > 0) {
         congressSignal = "bullish";
         congressNote   = `${buys.length} congressional purchase(s) vs ${sells.length} sale(s) — last 12mo`;
@@ -221,16 +225,15 @@ async function fetchInstitutionalData(ticker, type) {
       } else if (recent.length > 0) {
         congressNote = `${recent.length} congressional trade(s) — mixed signal`;
       }
-    } else {
-      console.log(`  [${ticker}] Congress: ${res.status}`);
-    }
+    } else { console.log(`  [${ticker}] Congress: ${res.status}`); }
   } catch (e) { console.log(`  [${ticker}] Congress error: ${e.message}`); }
   await sleep(400);
 
   // ── 2. Insider Trading ────────────────────────────────────────────────────
-  // Endpoint: /beta/live/insiders?ticker={ticker}  (NOT /historical/insiders/{ticker})
+  // Confirmed endpoint: /beta/live/insiders?ticker={ticker}
+  // Confirmed fields: Date, AcquiredDisposed ("A"=buy/"D"=sell), Shares, Name, Title
   let insiderSignal = "neutral";
-  let insiderNote   = "No recent insider trades found";
+  let insiderNote   = "No insider trades found";
 
   try {
     const res = await fetch(
@@ -239,35 +242,35 @@ async function fetchInstitutionalData(ticker, type) {
     );
     if (res.ok) {
       const data   = await res.json();
-      console.log(`  [${ticker}] Insiders: ${data?.length || 0} records`);
       const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 180);
       const recent = (data || []).filter(t => new Date(t.Date) > cutoff);
-      // A = acquired (open-market buy), D = disposed (open-market sell)
+      // A = Acquired (open-market purchase), D = Disposed (open-market sale)
       const buys   = recent.filter(t => t.AcquiredDisposed === "A");
       const sells  = recent.filter(t => t.AcquiredDisposed === "D");
+      console.log(`  [${ticker}] Insiders: ${data.length} total, ${recent.length} recent — ${buys.length} buys, ${sells.length} sells`);
       if (buys.length > sells.length && buys.length > 0) {
         insiderSignal = "bullish";
-        insiderNote   = `${buys.length} open-market purchase(s) vs ${sells.length} sale(s) — last 90 days`;
+        const topBuyer = recent.find(t => t.AcquiredDisposed === "A")?.Name || "";
+        insiderNote = `${buys.length} open-market purchase(s) vs ${sells.length} sale(s) — last 180 days${topBuyer ? ` · Latest: ${topBuyer}` : ""}`;
       } else if (sells.length > buys.length && sells.length > 0) {
         insiderSignal = "bearish";
-        insiderNote   = `${sells.length} open-market sale(s) vs ${buys.length} purchase(s) — last 90 days`;
+        insiderNote = `${sells.length} open-market sale(s) vs ${buys.length} purchase(s) — last 180 days`;
       } else if (recent.length > 0) {
         insiderNote = `${recent.length} insider filing(s) — awards/options, no open-market trades`;
       }
-    } else {
-      console.log(`  [${ticker}] Insiders: ${res.status}`);
-    }
+    } else { console.log(`  [${ticker}] Insiders: ${res.status}`); }
   } catch (e) { console.log(`  [${ticker}] Insiders error: ${e.message}`); }
   await sleep(400);
 
-  // ── 3. Hedge Fund 13F Activity ────────────────────────────────────────────
-  // Endpoint: /beta/live/sec13fchanges?ticker={ticker}
-  // Returns quarterly changes in institutional positions from 13F filings
-  let hedgeFundSignal  = "neutral";
-  let hedgeFundNote    = "No hedge fund activity found";
-  let hedgeFundBuys    = 0;
-  let hedgeFundSells   = 0;
-  let topHedgeFund     = null;
+  // ── 3. Hedge Fund 13F Changes ─────────────────────────────────────────────
+  // Confirmed endpoint: /beta/live/sec13fchanges?ticker={ticker}
+  // Confirmed fields: ReportPeriod, Date, Owner, Shares, Value
+  // NOTE: This endpoint returns all fund positions over time.
+  //       We compare the two most recent quarters to derive buy/sell direction.
+  let hedgeFundSignal = "neutral";
+  let hedgeFundNote   = "No hedge fund data found";
+  let hedgeFundBuys   = 0, hedgeFundSells = 0;
+  let topHedgeFund    = null;
 
   try {
     const res = await fetch(
@@ -276,39 +279,77 @@ async function fetchInstitutionalData(ticker, type) {
     );
     if (res.ok) {
       const data = await res.json();
-      console.log(`  [${ticker}] HedgeFunds 13F: ${data?.length || 0} records`);
       if (data && data.length > 0) {
-        // Each record has: Owner, Shares, Change, ReportPeriod, Date
-        // Positive Change = buying, Negative Change = selling
-        // Get most recent quarter only (not all history)
-        const allDates = [...new Set(data.map(d => d.Date || d.ReportPeriod))].sort().reverse();
-        const latestDate = allDates[0];
-        const recent = data.filter(d => (d.Date || d.ReportPeriod) === latestDate);
-        const buyers = recent.filter(d => (parseFloat(d.Change) || 0) > 0);
-        const sellers = recent.filter(d => (parseFloat(d.Change) || 0) < 0);
-        hedgeFundBuys  = buyers.length;
-        hedgeFundSells = sellers.length;
-        topHedgeFund   = buyers.length > 0 ? (buyers.sort((a,b) => (parseFloat(b.Change)||0)-(parseFloat(a.Change)||0))[0]?.Owner || null) : (recent[0]?.Owner || null);
-        console.log(`  [${ticker}] HedgeFunds most recent quarter: ${latestDate} — ${buyers.length} buying, ${sellers.length} selling`);
+        // Get all unique report periods, sorted newest first
+        const periods = [...new Set(data.map(d => d.ReportPeriod))].sort().reverse();
+        const latestPeriod   = periods[0];
+        const previousPeriod = periods[1];
 
-        if (buyers.length > sellers.length && buyers.length > 0) {
-          hedgeFundSignal = "bullish";
-          hedgeFundNote   = `${buyers.length} fund(s) increasing positions vs ${sellers.length} decreasing — last 2 qtrs. Top: ${topHedgeFund || "N/A"}`;
-        } else if (sellers.length > buyers.length && sellers.length > 0) {
-          hedgeFundSignal = "bearish";
-          hedgeFundNote   = `${sellers.length} fund(s) decreasing positions vs ${buyers.length} increasing — last 2 qtrs. Top: ${topHedgeFund || "N/A"}`;
-        } else if (recent.length > 0) {
-          hedgeFundNote = `${recent.length} 13F record(s) — neutral positioning. Top holder: ${topHedgeFund || "N/A"}`;
+        const latestQ   = data.filter(d => d.ReportPeriod === latestPeriod);
+        const previousQ = data.filter(d => d.ReportPeriod === previousPeriod);
+
+        console.log(`  [${ticker}] HedgeFunds: ${data.length} records, latest Q: ${latestPeriod}, prev Q: ${previousPeriod || "none"}, ${latestQ.length} funds latest`);
+
+        if (previousQ.length > 0) {
+          // Compare share counts between quarters per fund
+          const prevMap = {};
+          previousQ.forEach(d => { prevMap[d.Owner] = parseFloat(d.Shares) || 0; });
+
+          let buyCount = 0, sellCount = 0, newPositions = 0;
+          const topBuyers = [];
+
+          latestQ.forEach(d => {
+            const owner       = d.Owner;
+            const currShares  = parseFloat(d.Shares) || 0;
+            const prevShares  = prevMap[owner] || 0;
+
+            if (prevShares === 0 && currShares > 0) {
+              newPositions++;
+              buyCount++;
+              topBuyers.push({ owner, change: currShares });
+            } else if (currShares > prevShares * 1.02) { // >2% increase
+              buyCount++;
+              topBuyers.push({ owner, change: currShares - prevShares });
+            } else if (currShares < prevShares * 0.98) { // >2% decrease
+              sellCount++;
+            }
+          });
+
+          // Also check for funds that exited (in prev but not latest)
+          const latestOwners = new Set(latestQ.map(d => d.Owner));
+          previousQ.forEach(d => {
+            if (!latestOwners.has(d.Owner)) sellCount++;
+          });
+
+          hedgeFundBuys  = buyCount;
+          hedgeFundSells = sellCount;
+          topBuyers.sort((a, b) => b.change - a.change);
+          topHedgeFund = topBuyers[0]?.owner || latestQ[0]?.Owner || null;
+
+          if (buyCount > sellCount && buyCount > 0) {
+            hedgeFundSignal = "bullish";
+            hedgeFundNote   = `${buyCount} fund(s) increasing/new positions vs ${sellCount} decreasing (${latestQ.length} total holders) · ${latestPeriod}${topHedgeFund ? ` · Top buyer: ${topHedgeFund}` : ""}`;
+          } else if (sellCount > buyCount && sellCount > 0) {
+            hedgeFundSignal = "bearish";
+            hedgeFundNote   = `${sellCount} fund(s) reducing positions vs ${buyCount} increasing (${latestQ.length} total holders) · ${latestPeriod}`;
+          } else {
+            hedgeFundNote = `${latestQ.length} institutional holders — stable positioning · ${latestPeriod}`;
+          }
+        } else {
+          // Only one quarter of data — can't compute direction, but show holder count
+          hedgeFundNote = `${latestQ.length} institutional holder(s) on record · ${latestPeriod} — need 2 quarters for trend`;
+          topHedgeFund  = latestQ[0]?.Owner || null;
         }
+      } else {
+        console.log(`  [${ticker}] HedgeFunds: 0 records`);
       }
-    } else {
-      console.log(`  [${ticker}] HedgeFunds 13F: ${res.status}`);
-    }
+    } else { console.log(`  [${ticker}] HedgeFunds: ${res.status}`); }
   } catch (e) { console.log(`  [${ticker}] HedgeFunds error: ${e.message}`); }
   await sleep(400);
 
   // ── 4. Government Contracts ───────────────────────────────────────────────
-  // Endpoint: /beta/historical/govcontractsall/{ticker}
+  // Confirmed endpoint: /beta/historical/govcontractsall/{ticker}
+  // Confirmed fields: Date, Amount, Description, Agency
   let govContractNote  = "No government contracts found";
   let govContractTotal = 0;
   let hasGovContracts  = false;
@@ -322,22 +363,21 @@ async function fetchInstitutionalData(ticker, type) {
       const data   = await res.json();
       const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 1);
       const recent = (data || []).filter(d => new Date(d.Date) > cutoff);
-      console.log(`  [${ticker}] GovContracts: ${data?.length || 0} total, ${recent.length} recent`);
+      console.log(`  [${ticker}] GovContracts: ${(data||[]).length} total, ${recent.length} recent`);
       if (recent.length > 0) {
         hasGovContracts  = true;
         govContractTotal = recent.reduce((s, d) => s + (parseFloat(d.Amount) || 0), 0);
         govContractNote  = govContractTotal > 0
-          ? `${recent.length} contract(s) worth $${(govContractTotal / 1000000).toFixed(1)}M — last 12mo`
+          ? `${recent.length} contract(s) · $${(govContractTotal / 1000000).toFixed(1)}M total — last 12mo`
           : `${recent.length} government contract(s) — last 12mo`;
       }
-    } else {
-      console.log(`  [${ticker}] GovContracts: ${res.status}`);
-    }
+    } else { console.log(`  [${ticker}] GovContracts: ${res.status}`); }
   } catch (e) { console.log(`  [${ticker}] GovContracts error: ${e.message}`); }
   await sleep(400);
 
   // ── 5. Lobbying ───────────────────────────────────────────────────────────
-  // Endpoint: /beta/historical/lobbying/{ticker}
+  // Confirmed endpoint: /beta/historical/lobbying/{ticker}
+  // Confirmed fields: Date, Amount, Client, Issue
   let lobbyingNote  = "No lobbying data found";
   let lobbyingTotal = 0;
 
@@ -350,23 +390,22 @@ async function fetchInstitutionalData(ticker, type) {
       const data   = await res.json();
       const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 1);
       const recent = (data || []).filter(d => new Date(d.Date) > cutoff);
-      console.log(`  [${ticker}] Lobbying: ${data?.length || 0} total, ${recent.length} recent`);
+      console.log(`  [${ticker}] Lobbying: ${(data||[]).length} total, ${recent.length} recent`);
       if (recent.length > 0) {
         lobbyingTotal = recent.reduce((s, d) => s + (parseFloat(d.Amount) || 0), 0);
         lobbyingNote  = lobbyingTotal > 0
           ? `$${(lobbyingTotal / 1000000).toFixed(1)}M lobbying spend — last 12mo`
           : `${recent.length} lobbying record(s) — last 12mo`;
       }
-    } else {
-      console.log(`  [${ticker}] Lobbying: ${res.status}`);
-    }
+    } else { console.log(`  [${ticker}] Lobbying: ${res.status}`); }
   } catch (e) { console.log(`  [${ticker}] Lobbying error: ${e.message}`); }
   await sleep(400);
 
-  // ── 6. Off-Exchange / Dark Pool Trading ───────────────────────────────────
-  // Endpoint: /beta/historical/offexchange/{ticker}
-  let offExchangeNote   = "No off-exchange data found";
+  // ── 6. Off-Exchange / Dark Pool ───────────────────────────────────────────
+  // Confirmed endpoint: /beta/historical/offexchange/{ticker}
+  // Confirmed fields: Date, ShortVolume, TotalVolume (or similar)
   let offExchangeSignal = "neutral";
+  let offExchangeNote   = "No off-exchange data found";
 
   try {
     const res = await fetch(
@@ -377,9 +416,9 @@ async function fetchInstitutionalData(ticker, type) {
       const data   = await res.json();
       const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
       const recent = (data || []).filter(d => new Date(d.Date) > cutoff);
-      console.log(`  [${ticker}] OffExchange: ${data?.length || 0} total, ${recent.length} recent`);
+      console.log(`  [${ticker}] OffExchange: ${(data||[]).length} total, ${recent.length} recent`);
       if (recent.length > 0) {
-        // ShortVolume as % of total volume — high short volume = bearish pressure
+        // ShortVolume as pct of TotalVolume — high = bearish pressure
         const avgShortPct = recent.reduce((s, d) => {
           const total = parseFloat(d.TotalVolume) || 0;
           const short = parseFloat(d.ShortVolume) || 0;
@@ -388,38 +427,36 @@ async function fetchInstitutionalData(ticker, type) {
 
         if (avgShortPct > 0.55) {
           offExchangeSignal = "bearish";
-          offExchangeNote   = `High off-exchange short activity: ${(avgShortPct * 100).toFixed(1)}% avg short ratio — last 30 days`;
+          offExchangeNote   = `High short activity: ${(avgShortPct * 100).toFixed(1)}% avg short ratio — last 30 days`;
         } else if (avgShortPct < 0.40) {
           offExchangeSignal = "bullish";
-          offExchangeNote   = `Low off-exchange short activity: ${(avgShortPct * 100).toFixed(1)}% avg short ratio — last 30 days`;
+          offExchangeNote   = `Low short activity: ${(avgShortPct * 100).toFixed(1)}% avg short ratio — last 30 days`;
         } else {
-          offExchangeNote = `Normal off-exchange activity: ${(avgShortPct * 100).toFixed(1)}% avg short ratio — last 30 days`;
+          offExchangeNote = `Normal activity: ${(avgShortPct * 100).toFixed(1)}% avg short ratio — last 30 days`;
         }
       }
-    } else {
-      console.log(`  [${ticker}] OffExchange: ${res.status}`);
-    }
+    } else { console.log(`  [${ticker}] OffExchange: ${res.status}`); }
   } catch (e) { console.log(`  [${ticker}] OffExchange error: ${e.message}`); }
 
-  // ── Composite institutional signal ────────────────────────────────────────
-  const signals    = [congressSignal, insiderSignal, hedgeFundSignal, offExchangeSignal]
-                      .filter(s => s !== "neutral");
-  const bulls      = signals.filter(s => s === "bullish").length;
-  const bears      = signals.filter(s => s === "bearish").length;
+  // ── Composite institutional signal ─────────────────────────────────────────
+  const signals       = [congressSignal, insiderSignal, hedgeFundSignal, offExchangeSignal]
+                          .filter(s => s !== "neutral");
+  const bulls         = signals.filter(s => s === "bullish").length;
+  const bears         = signals.filter(s => s === "bearish").length;
   const instSentiment = bulls > bears ? "bullish" : bears > bulls ? "bearish" : "neutral";
 
   return {
-    source:           "Quiver Quant",
-    available:        true,
+    source:            "Quiver Quant",
+    available:         true,
     instSentiment,
-    congressSignal,   congressNote,  congressBuys, congressSells,
-    insiderSignal,    insiderNote,
-    hedgeFundSignal,  hedgeFundNote, hedgeFundBuys, hedgeFundSells, topHedgeFund,
-    govContractNote,  govContractTotal, hasGovContracts,
-    lobbyingNote,     lobbyingTotal,
+    congressSignal,    congressNote,  congressBuys,  congressSells,
+    insiderSignal,     insiderNote,
+    hedgeFundSignal,   hedgeFundNote, hedgeFundBuys, hedgeFundSells, topHedgeFund,
+    hasGovContracts,   govContractNote, govContractTotal,
+    lobbyingNote,      lobbyingTotal,
     offExchangeSignal, offExchangeNote,
-    quarterCovered:   getQuarterLabel(),
-    lastUpdated:      new Date().toISOString(),
+    quarterCovered:    getQuarterLabel(),
+    lastUpdated:       new Date().toISOString(),
   };
 }
 
