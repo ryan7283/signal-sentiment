@@ -798,16 +798,7 @@ const GITHUB_TOKEN = localStorage.getItem('signal_github_token') || '';
 // WATCHLIST is loaded dynamically from watchlist.json in your GitHub repo
 let WATCHLIST = [];
 
-const INST_DATA = {
-  IREN: { netChange: '+2.3M', topBuyer: 'ARK Invest', topSeller: 'Citadel', sentiment: 'bullish', ownership: '38%' },
-  PLTR: { netChange: '+8.1M', topBuyer: 'Vanguard', topSeller: 'Morgan Stanley', sentiment: 'bullish', ownership: '54%' },
-  CRWD: { netChange: '+1.2M', topBuyer: 'BlackRock', topSeller: 'Goldman Sachs', sentiment: 'neutral', ownership: '71%' },
-  TSLA: { netChange: '-4.5M', topBuyer: 'State Street', topSeller: 'ARK Invest', sentiment: 'bearish', ownership: '48%' },
-  AFRM: { netChange: '+0.8M', topBuyer: 'ARK Invest', topSeller: 'Two Sigma', sentiment: 'neutral', ownership: '62%' },
-  KEEL: { netChange: 'N/A', topBuyer: '—', topSeller: '—', sentiment: 'na', ownership: 'Private' },
-  IBIT: { netChange: '+12.4M', topBuyer: 'Millennium Mgmt', topSeller: 'Jane Street', sentiment: 'bullish', ownership: '22%' },
-  APLD: { netChange: '+1.8M', topBuyer: 'Renaissance Tech', topSeller: 'Susquehanna', sentiment: 'bullish', ownership: '29%' },
-};
+// INST_DATA removed — using live Quiver Quant data from results.json
 
 // ── STATE ─────────────────────────────────────────────────────────────────
 let results    = {};
@@ -1113,7 +1104,8 @@ function renderOverview() {
 function renderCard(ticker, name) {
   const r = results[ticker];
   const isLoading = loading[ticker];
-  const inst = INST_DATA[ticker];
+  // Live institutional data comes from results.json via r.institutional
+  const inst = null; // static INST_DATA removed
 
   let sentiment = '';
   if (r && !r.error) {
@@ -1161,6 +1153,7 @@ function renderCard(ticker, name) {
         <span style="color:var(--muted)">📊 ${r.tweetCount||0} posts</span>
         <span style="color:${volDelta>0?'var(--green)':volDelta<0?'var(--red)':'var(--muted)'}">${volStr}</span>
       </div>
+      ${r.spamDetected ? '<div style="font-size:10px;color:#f59e0b;margin-top:6px;padding:4px 8px;background:#1c1917;border-radius:4px;border:1px solid #292524">⚠ Low signal quality — spam/bot activity detected in posts</div>' : ''}
       <div class="card-summary" style="margin-top:8px">${r.summary || ''}</div>
       <div class="themes">${themes}</div>
       <div class="card-counts" style="margin-top:6px">
@@ -1218,7 +1211,8 @@ function selectTicker(ticker) {
 // ── DETAIL ────────────────────────────────────────────────────────────────
 function renderDetail(ticker) {
   const r = results[ticker];
-  const inst = INST_DATA[ticker];
+  // Live institutional data comes from results.json via r.institutional
+  const inst = null; // static INST_DATA removed
   const composite = r.compositeScore ?? r.sentimentScore;
   const pct = ((composite + 1) / 2) * 100;
   const barClass = composite > 0.15 ? 'green' : composite < -0.15 ? 'red' : 'amber';
