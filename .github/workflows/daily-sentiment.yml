@@ -41,4 +41,3 @@ jobs:
           git add data/results.json data/history/
           git diff --cached --quiet || git commit -m "Daily scan: $(date +'%Y-%m-%d')"
           git push
-
