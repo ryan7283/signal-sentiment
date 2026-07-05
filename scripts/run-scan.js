@@ -242,11 +242,25 @@ async function fetchInstitutionalData(ticker, type) {
     );
     if (res.ok) {
       const data   = await res.json();
+      // DEBUG: print first record to see actual field names
+      if (data && data.length > 0) {
+        console.log(`  [${ticker}] Insiders sample record:`, JSON.stringify(data[0]));
+      }
       const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 180);
       const recent = (data || []).filter(t => new Date(t.Date) > cutoff);
-      // A = Acquired (open-market purchase), D = Disposed (open-market sale)
-      const buys   = recent.filter(t => t.AcquiredDisposed === "A");
-      const sells  = recent.filter(t => t.AcquiredDisposed === "D");
+      // Try multiple possible field name variations
+      const buys   = recent.filter(t =>
+        t.AcquiredDisposed === "A" ||
+        t.acquired_disposed === "A" ||
+        t.transaction_type === "P" ||
+        (t.TransactionType || "").toLowerCase() === "buy"
+      );
+      const sells  = recent.filter(t =>
+        t.AcquiredDisposed === "D" ||
+        t.acquired_disposed === "D" ||
+        t.transaction_type === "S" ||
+        (t.TransactionType || "").toLowerCase() === "sell"
+      );
       console.log(`  [${ticker}] Insiders: ${data.length} total, ${recent.length} recent — ${buys.length} buys, ${sells.length} sells`);
       if (buys.length > sells.length && buys.length > 0) {
         insiderSignal = "bullish";
@@ -288,6 +302,8 @@ async function fetchInstitutionalData(ticker, type) {
         const latestQ   = data.filter(d => d.ReportPeriod === latestPeriod);
         const previousQ = data.filter(d => d.ReportPeriod === previousPeriod);
 
+        // DEBUG: print first record to see actual field names
+        if (data.length > 0) console.log(`  [${ticker}] HedgeFunds sample:`, JSON.stringify(data[0]));
         console.log(`  [${ticker}] HedgeFunds: ${data.length} records, latest Q: ${latestPeriod}, prev Q: ${previousPeriod || "none"}, ${latestQ.length} funds latest`);
 
         if (previousQ.length > 0) {
