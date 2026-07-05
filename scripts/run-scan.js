@@ -117,22 +117,24 @@ async function fetchTweets(ticker, query) {
 
 async function fetchInstitutionalData(ticker, type) {
   const apiKey = process.env.QUIVER_QUANT_API_KEY;
+  const fmpKey = process.env.FMP_API_KEY || "demo"; // free tier — 250 calls/day
 
   if (type === "etf") {
     return {
       source: "N/A — ETF", available: false,
       instSentiment: "neutral", insiderSignal: "neutral",
       congressSignal: "neutral", congressNote: "N/A — ETF",
-      lobbyingNote: "N/A — ETF", instNote: "ETFs do not have this data",
+      hedgeFundSignal: "neutral", hedgeFundNote: "ETFs tracked differently",
+      instNote: "ETFs do not have insider or congressional data",
       quarterCovered: getQuarterLabel(), lastUpdated: new Date().toISOString(),
     };
   }
 
   if (!apiKey) return buildNoKeyInstitutional();
 
-  const headers = { Authorization: `Bearer ${apiKey}`, Accept: "application/json" };
+  const quiverHeaders = { Authorization: `Bearer ${apiKey}`, Accept: "application/json" };
 
-  // ── 1. Congressional Trading ──────────────────────────────────────────────
+  // ── 1. Congressional Trading (Quiver) ─────────────────────────────────────
   let congressSignal = "neutral";
   let congressNote   = "No congressional trades found";
   let congressBuys   = 0, congressSells = 0;
@@ -140,7 +142,7 @@ async function fetchInstitutionalData(ticker, type) {
   try {
     const res = await fetch(
       `https://api.quiverquant.com/beta/historical/congresstrading/${ticker}`,
-      { headers }
+      { headers: quiverHeaders }
     );
     if (res.ok) {
       const data   = await res.json();
@@ -165,14 +167,14 @@ async function fetchInstitutionalData(ticker, type) {
   } catch (e) { console.log(`  [${ticker}] Congress error: ${e.message}`); }
   await sleep(350);
 
-  // ── 2. Insider Trading ────────────────────────────────────────────────────
+  // ── 2. Insider Trading (Quiver) ───────────────────────────────────────────
   let insiderSignal = "neutral";
   let insiderNote   = "No insider trades found";
 
   try {
     const res = await fetch(
       `https://api.quiverquant.com/beta/historical/insiders/${ticker}`,
-      { headers }
+      { headers: quiverHeaders }
     );
     if (res.ok) {
       const data   = await res.json();
@@ -188,86 +190,135 @@ async function fetchInstitutionalData(ticker, type) {
         insiderSignal = "bearish";
         insiderNote   = `${sells.length} open-market sale(s) vs ${buys.length} purchase(s) — last 90 days`;
       } else if (recent.length > 0) {
-        insiderNote = `${recent.length} insider filing(s) — awards/options, no open-market trades`;
+        insiderNote = `${recent.length} insider filing(s) — awards/options only`;
       }
     } else {
-      console.log(`  [${ticker}] Insiders: ${res.status} — may require higher Quiver tier`);
+      console.log(`  [${ticker}] Insiders: ${res.status}`);
       insiderNote = `Insider data: API returned ${res.status}`;
     }
   } catch (e) { console.log(`  [${ticker}] Insiders error: ${e.message}`); }
   await sleep(350);
 
-  // ── 3. Lobbying ───────────────────────────────────────────────────────────
+  // ── 3. Lobbying (Quiver) ──────────────────────────────────────────────────
   let lobbyingNote  = "No lobbying data found";
   let lobbyingTotal = 0;
 
   try {
     const res = await fetch(
       `https://api.quiverquant.com/beta/historical/lobbying/${ticker}`,
-      { headers }
+      { headers: quiverHeaders }
     );
     if (res.ok) {
       const data   = await res.json();
-      console.log(`  [${ticker}] Lobbying: ${data?.length || 0} records`);
       const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 1);
       const recent = (data || []).filter(t => new Date(t.Date || t.year) > cutoff);
       if (recent.length > 0) {
         lobbyingTotal = recent.reduce((s, d) => s + (parseFloat(d.Amount) || 0), 0);
         lobbyingNote  = lobbyingTotal > 0
-          ? `$${(lobbyingTotal / 1000000).toFixed(1)}M lobbying spend in last 12 months`
-          : `${recent.length} lobbying record(s) in last 12 months`;
+          ? `$${(lobbyingTotal / 1000000).toFixed(1)}M lobbying spend — last 12mo`
+          : `${recent.length} lobbying record(s) — last 12mo`;
       }
+      console.log(`  [${ticker}] Lobbying: ${data?.length || 0} records — ${lobbyingNote}`);
     } else {
       console.log(`  [${ticker}] Lobbying: ${res.status}`);
     }
   } catch (e) { console.log(`  [${ticker}] Lobbying error: ${e.message}`); }
   await sleep(350);
 
-  // ── 4. Government Contracts (live endpoint — check if ticker mentioned) ───
+  // ── 4. Government Contracts (Quiver live feed) ────────────────────────────
   let govContractNote = "No recent government contracts";
   let hasGovContracts = false;
 
   try {
     const res = await fetch(
       `https://api.quiverquant.com/beta/live/governmentcontracts`,
-      { headers }
+      { headers: quiverHeaders }
     );
     if (res.ok) {
       const data    = await res.json();
       const matches = (data || []).filter(d =>
         (d.Ticker || "").toUpperCase() === ticker.toUpperCase()
       );
-      console.log(`  [${ticker}] Gov contracts: ${matches.length} matches from live feed`);
+      console.log(`  [${ticker}] Gov contracts: ${matches.length} matches`);
       if (matches.length > 0) {
         hasGovContracts = true;
         const total = matches.reduce((s, d) => s + (parseFloat(d.Amount) || 0), 0);
         govContractNote = total > 0
-          ? `${matches.length} recent gov contract(s) totaling $${(total / 1000000).toFixed(1)}M`
-          : `${matches.length} recent government contract(s) found`;
+          ? `${matches.length} recent gov contract(s) — $${(total / 1000000).toFixed(1)}M total`
+          : `${matches.length} recent government contract(s)`;
       }
     } else {
       console.log(`  [${ticker}] Gov contracts: ${res.status}`);
     }
   } catch (e) { console.log(`  [${ticker}] Gov contracts error: ${e.message}`); }
+  await sleep(350);
 
-  // ── Composite institutional signal ────────────────────────────────────────
-  // Congress + insider signals weighted together
-  const signals = [congressSignal, insiderSignal].filter(s => s !== "neutral");
-  const bulls   = signals.filter(s => s === "bullish").length;
-  const bears   = signals.filter(s => s === "bearish").length;
+  // ── 5. Institutional / Hedge Fund Holdings (FMP free tier) ───────────────
+  // Financial Modeling Prep — 250 free calls/day, no credit card needed
+  // Sign up free at: financialmodelingprep.com/developer/docs
+  // Add FMP_API_KEY to GitHub Secrets to activate (or leave blank for demo key)
+  let hedgeFundSignal  = "neutral";
+  let hedgeFundNote    = "No institutional data available";
+  let instOwnershipPct = null;
+  let instHolders      = null;
+  let topHolder        = null;
+
+  try {
+    const fmpUrl = `https://financialmodelingprep.com/api/v3/institutional-holder/${ticker}?apikey=${fmpKey}`;
+    const res    = await fetch(fmpUrl);
+    if (res.ok) {
+      const data = await res.json();
+      console.log(`  [${ticker}] FMP institutional: ${data?.length || 0} holders`);
+      if (data && data.length > 0 && !data.hasOwnProperty("Error Message")) {
+        // Sort by shares held descending
+        const sorted = data.sort((a, b) => (b.shares || 0) - (a.shares || 0));
+        instHolders  = sorted.length;
+        topHolder    = sorted[0]?.holder || null;
+
+        // Calculate total institutional shares
+        const totalShares = sorted.reduce((s, d) => s + (parseFloat(d.shares) || 0), 0);
+
+        // Check if share counts changed vs prior period
+        const increased = sorted.filter(d => (d.change || 0) > 0).length;
+        const decreased = sorted.filter(d => (d.change || 0) < 0).length;
+
+        if (increased > decreased && increased > 0) {
+          hedgeFundSignal = "bullish";
+          hedgeFundNote   = `${instHolders} institutional holders — ${increased} increasing positions vs ${decreased} decreasing. Top: ${topHolder}`;
+        } else if (decreased > increased && decreased > 0) {
+          hedgeFundSignal = "bearish";
+          hedgeFundNote   = `${instHolders} institutional holders — ${decreased} decreasing positions vs ${increased} increasing. Top: ${topHolder}`;
+        } else {
+          hedgeFundNote = `${instHolders} institutional holders — stable. Top: ${topHolder || "N/A"}`;
+        }
+      } else if (data?.["Error Message"]) {
+        console.log(`  [${ticker}] FMP: ${data["Error Message"]}`);
+        hedgeFundNote = "FMP demo key limit reached — add FMP_API_KEY to GitHub Secrets";
+      }
+    } else {
+      console.log(`  [${ticker}] FMP institutional: ${res.status}`);
+    }
+  } catch (e) { console.log(`  [${ticker}] FMP error: ${e.message}`); }
+
+  // ── Composite institutional signal ─────────────────────────────────────────
+  const allSignals = [congressSignal, insiderSignal, hedgeFundSignal].filter(s => s !== "neutral");
+  const bulls      = allSignals.filter(s => s === "bullish").length;
+  const bears      = allSignals.filter(s => s === "bearish").length;
   const instSentiment = bulls > bears ? "bullish" : bears > bulls ? "bearish" : "neutral";
 
   return {
-    source:          "Quiver Quant",
-    available:       true,
+    source:           "Quiver Quant + FMP",
+    available:        true,
     instSentiment,
-    instNote:        "13F hedge fund holdings not available via Quiver API public endpoints",
-    congressSignal,  congressNote, congressBuys, congressSells,
-    insiderSignal,   insiderNote,
-    lobbyingNote,    lobbyingTotal,
-    hasGovContracts, govContractNote,
-    quarterCovered:  getQuarterLabel(),
-    lastUpdated:     new Date().toISOString(),
+    congressSignal,   congressNote, congressBuys, congressSells,
+    insiderSignal,    insiderNote,
+    lobbyingNote,     lobbyingTotal,
+    hasGovContracts,  govContractNote,
+    hedgeFundSignal,  hedgeFundNote,
+    instOwnershipPct, instHolders, topHolder,
+    instNote:         "Institutional: FMP free tier (250 calls/day) — upgrade to Unusual Whales for full 13F",
+    quarterCovered:   getQuarterLabel(),
+    lastUpdated:      new Date().toISOString(),
   };
 }
 
