@@ -110,6 +110,62 @@ async function fetchTweets(ticker, query) {
   return (data.data || []).map(t => t.text);
 }
 
+// ─── TWEET QUALITY FILTER ─────────────────────────────────────────────────────
+// Runs BEFORE AI analysis to remove spam, bots, and irrelevant posts
+// This ensures Claude only scores genuine financial sentiment
+
+function cleanTweets(tweets, ticker) {
+  const original = tweets.length;
+
+  // Patterns that indicate spam or non-financial content
+  const spamPatterns = [
+    /whatsapp\.com/i,
+    /wa\.me\//i,
+    /chat\.whatsapp/i,
+    /join.*group/i,
+    /dm.*signal/i,
+    /signal.*group/i,
+    /guaranteed.*profit/i,
+    /100x/i,
+    /get rich/i,
+    /investment group/i,
+    /forex.*profit/i,
+    /crypto.*recovery/i,
+    /recover.*lost.*fund/i,
+    /binary.*option/i,
+    /pump.*dump/i,
+    /t\.me\//i,            // Telegram links
+    /bit\.ly\//i,          // Generic shortlinks in spam context
+  ];
+
+  // Words that suggest the post has no financial relevance
+  // Only applied when the cashtag isn't present
+  const hasCashTag = (text) => {
+    const t = ticker.toUpperCase();
+    return text.includes(`$${t}`) || text.includes(`#${t}`);
+  };
+
+  const filtered = tweets.filter(text => {
+    // Remove very short posts (no substance)
+    if (text.trim().length < 20) return false;
+
+    // Remove posts matching spam patterns
+    if (spamPatterns.some(p => p.test(text))) return false;
+
+    // Remove posts that are purely @mentions with no content
+    if (/^(@\w+\s*){3,}$/.test(text.trim())) return false;
+
+    return true;
+  });
+
+  const removed = original - filtered.length;
+  if (removed > 0) {
+    console.log(`  [${ticker}] Quality filter: removed ${removed}/${original} spam/low-quality posts. ${filtered.length} genuine posts remaining.`);
+  }
+
+  return filtered;
+}
+
 // ─── QUIVER QUANT INSTITUTIONAL DATA ─────────────────────────────────────────
 // Requires QUIVER_QUANT_API_KEY in GitHub Secrets
 // Sign up at quiverquant.com — Researcher plan ($25/mo)
@@ -416,6 +472,7 @@ async function analyzeSentiment(ticker, name, type, sector, tweets, yesterday) {
       summary:         "No posts found for this ticker in the last 24 hours.",
       volumeTrend:     "silent",
       confidence:      "low",
+      spamCount:       0,
       tweetCount:      0,
       sentimentTrend:  trend.trend,
       sentimentDelta:  0,
@@ -426,7 +483,10 @@ async function analyzeSentiment(ticker, name, type, sector, tweets, yesterday) {
     };
   }
 
-  const tweetBlock = tweets.slice(0, 30).map((t, i) => `${i + 1}. "${t}"`).join("\n");
+  // Filter spam and low-quality posts before AI analysis
+  const cleanedTweets = cleanTweets(tweets, ticker);
+  const tweetBlock = cleanedTweets.slice(0, 30).map((t, i) => `${i + 1}. "${t}"`).join("\n");
+  const filteredCount = tweets.length - cleanedTweets.length;
   const context    = type === "etf"
     ? `This is an ETF (${sector}). Focus on fund flow sentiment, sector momentum, and macro themes.`
     : `This is a stock in the ${sector} sector. Focus on company-specific sentiment, earnings, and competitive positioning.`;
@@ -438,12 +498,7 @@ async function analyzeSentiment(ticker, name, type, sector, tweets, yesterday) {
       role:    "user",
       content: `You are a financial sentiment analysis engine. ${context}
 
-CRITICAL QUALITY RULES:
-1. SPAM DETECTION: If 40%+ of posts are WhatsApp group invites, pump-and-dump promotions, bot text, or unrelated social content — set spamDetected=true, sentimentScore=0, signal=NEUTRAL, confidence=low.
-2. RELEVANCE: Only score posts discussing the company's financials, stock price, earnings, products, leadership, or market position. Ignore casual mentions.
-3. SIGNAL INTEGRITY: If fewer than 5 posts are genuinely financial, set confidence=low.
-
-Analyze these ${tweets.length} recent social media posts about $${ticker} (${name}) and return ONLY valid JSON — no markdown, no preamble.
+Analyze these ${cleanedTweets.length} pre-filtered social media posts about $${ticker} (${name}). Posts have been pre-cleaned to remove spam and off-topic content. Return ONLY valid JSON — no markdown, no preamble.
 
 Posts:
 ${tweetBlock}
@@ -452,19 +507,17 @@ Return exactly this JSON:
 {
   "ticker": "${ticker}",
   "name": "${name}",
-  "sentimentScore": <float -1.0 to 1.0, set 0 if spam dominates>,
+  "sentimentScore": <float -1.0 to 1.0>,
   "signal": <"STRONG_BUY"|"BUY"|"NEUTRAL"|"SELL"|"STRONG_SELL">,
-  "bullCount": <integer — genuine financial posts only>,
-  "bearCount": <integer — genuine financial posts only>,
-  "neutralCount": <integer — genuine financial posts only>,
-  "spamCount": <integer — spam/bot/irrelevant posts>,
-  "spamDetected": <boolean>,
-  "keyThemes": [<3-5 financial themes only>],
-  "topBullish": <most bullish genuine post verbatim or null>,
-  "topBearish": <most bearish genuine post verbatim or null>,
-  "summary": <2-sentence summary — if spam dominates state that clearly>,
+  "bullCount": <integer>,
+  "bearCount": <integer>,
+  "neutralCount": <integer>,
+  "keyThemes": [<3-5 short theme strings>],
+  "topBullish": <most bullish post verbatim or null>,
+  "topBearish": <most bearish post verbatim or null>,
+  "summary": <2-sentence analyst-quality summary>,
   "volumeTrend": <"surging"|"increasing"|"stable"|"declining"|"silent">,
-  "confidence": <"high" if 10+ genuine posts, "medium" if 5-9, "low" if under 5 or spam detected>
+  "confidence": <"high" if 10+ posts, "medium" if 5-9, "low" if fewer than 5>
 }`,
     }],
   });
@@ -477,7 +530,8 @@ Return exactly this JSON:
 
   return {
     ...parsed, type, sector,
-    tweetCount:     tweets.length,
+    tweetCount:     cleanedTweets.length,
+    filteredCount:  filteredCount,
     sentimentTrend: trend.trend,
     sentimentDelta: trend.sentimentDelta,
     volumeDelta:    0,
@@ -529,12 +583,13 @@ async function main() {
     const insBonus  = b(inst.insiderSignal)      * 0.07; // insider transactions
     const congBonus = b(inst.congressSignal)     * 0.06; // congressional trades
     const offBonus  = b(inst.offExchangeSignal)  * 0.04; // dark pool
-    // Reduce score if spam detected in sentiment
-    const spamPenalty = sentiment.spamDetected ? -Math.abs(sentiment.compositeScore) * 0.5 : 0;
+    // Reduce score weight when confidence is low (few genuine posts after filtering)
+    const confMultiplier = sentiment.confidence === 'low' ? 0.5 : sentiment.confidence === 'medium' ? 0.8 : 1.0;
+    const spamPenalty = 0; // Pre-filtering handles quality — no post-hoc penalty needed
 
     const finalScore = parseFloat(
       Math.max(-1, Math.min(1,
-        sentiment.compositeScore + spamPenalty + hfBonus + insBonus + congBonus + offBonus
+        (sentiment.compositeScore * confMultiplier) + hfBonus + insBonus + congBonus + offBonus
       )).toFixed(3)
     );
 
@@ -557,7 +612,7 @@ async function main() {
   const output = {
     generatedAt: new Date().toISOString(),
     tickerCount: results.length,
-    version:     "7.0",
+    version:     "8.0",
     results,
   };
 
