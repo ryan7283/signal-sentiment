@@ -184,8 +184,9 @@ async function fetchInstitutionalData(ticker, type) {
     if (res.ok) {
       const data   = await res.json();
       console.log(`  [${ticker}] Insiders: ${data?.length || 0} records`);
-      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 90);
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 180);
       const recent = (data || []).filter(t => new Date(t.Date) > cutoff);
+      // A = acquired (open-market buy), D = disposed (open-market sell)
       const buys   = recent.filter(t => t.AcquiredDisposed === "A");
       const sells  = recent.filter(t => t.AcquiredDisposed === "D");
       if (buys.length > sells.length && buys.length > 0) {
@@ -223,13 +224,16 @@ async function fetchInstitutionalData(ticker, type) {
       if (data && data.length > 0) {
         // Each record has: Owner, Shares, Change, ReportPeriod, Date
         // Positive Change = buying, Negative Change = selling
-        const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 180);
-        const recent = data.filter(d => new Date(d.Date || d.ReportPeriod) > cutoff);
+        // Get most recent quarter only (not all history)
+        const allDates = [...new Set(data.map(d => d.Date || d.ReportPeriod))].sort().reverse();
+        const latestDate = allDates[0];
+        const recent = data.filter(d => (d.Date || d.ReportPeriod) === latestDate);
         const buyers = recent.filter(d => (parseFloat(d.Change) || 0) > 0);
         const sellers = recent.filter(d => (parseFloat(d.Change) || 0) < 0);
         hedgeFundBuys  = buyers.length;
         hedgeFundSells = sellers.length;
-        topHedgeFund   = recent[0]?.Owner || null;
+        topHedgeFund   = buyers.length > 0 ? (buyers.sort((a,b) => (parseFloat(b.Change)||0)-(parseFloat(a.Change)||0))[0]?.Owner || null) : (recent[0]?.Owner || null);
+        console.log(`  [${ticker}] HedgeFunds most recent quarter: ${latestDate} — ${buyers.length} buying, ${sellers.length} selling`);
 
         if (buyers.length > sellers.length && buyers.length > 0) {
           hedgeFundSignal = "bullish";
@@ -434,26 +438,33 @@ async function analyzeSentiment(ticker, name, type, sector, tweets, yesterday) {
       role:    "user",
       content: `You are a financial sentiment analysis engine. ${context}
 
+CRITICAL QUALITY RULES:
+1. SPAM DETECTION: If 40%+ of posts are WhatsApp group invites, pump-and-dump promotions, bot text, or unrelated social content — set spamDetected=true, sentimentScore=0, signal=NEUTRAL, confidence=low.
+2. RELEVANCE: Only score posts discussing the company's financials, stock price, earnings, products, leadership, or market position. Ignore casual mentions.
+3. SIGNAL INTEGRITY: If fewer than 5 posts are genuinely financial, set confidence=low.
+
 Analyze these ${tweets.length} recent social media posts about $${ticker} (${name}) and return ONLY valid JSON — no markdown, no preamble.
 
 Posts:
 ${tweetBlock}
 
-Return exactly:
+Return exactly this JSON:
 {
   "ticker": "${ticker}",
   "name": "${name}",
-  "sentimentScore": <float -1.0 to 1.0>,
+  "sentimentScore": <float -1.0 to 1.0, set 0 if spam dominates>,
   "signal": <"STRONG_BUY"|"BUY"|"NEUTRAL"|"SELL"|"STRONG_SELL">,
-  "bullCount": <integer>,
-  "bearCount": <integer>,
-  "neutralCount": <integer>,
-  "keyThemes": [<3-5 short theme strings>],
-  "topBullish": <most bullish post verbatim or null>,
-  "topBearish": <most bearish post verbatim or null>,
-  "summary": <2-sentence analyst-quality summary>,
+  "bullCount": <integer — genuine financial posts only>,
+  "bearCount": <integer — genuine financial posts only>,
+  "neutralCount": <integer — genuine financial posts only>,
+  "spamCount": <integer — spam/bot/irrelevant posts>,
+  "spamDetected": <boolean>,
+  "keyThemes": [<3-5 financial themes only>],
+  "topBullish": <most bullish genuine post verbatim or null>,
+  "topBearish": <most bearish genuine post verbatim or null>,
+  "summary": <2-sentence summary — if spam dominates state that clearly>,
   "volumeTrend": <"surging"|"increasing"|"stable"|"declining"|"silent">,
-  "confidence": <"high"|"medium"|"low">
+  "confidence": <"high" if 10+ genuine posts, "medium" if 5-9, "low" if under 5 or spam detected>
 }`,
     }],
   });
@@ -511,16 +522,19 @@ async function main() {
     process.stdout.write(` ${instLabel}\n`);
 
     // Composite score: sentiment + trend + institutional signals
-    const instBonus     = institutional.instSentiment  === "bullish" ?  0.08
-                        : institutional.instSentiment  === "bearish" ? -0.08 : 0;
-    const insiderBonus  = institutional.insiderSignal  === "bullish" ?  0.07
-                        : institutional.insiderSignal  === "bearish" ? -0.07 : 0;
-    const congressBonus = institutional.congressSignal === "bullish" ?  0.05
-                        : institutional.congressSignal === "bearish" ? -0.05 : 0;
+    // Weighted composite score across all 6 institutional signals
+    const b = s => s === "bullish" ? 1 : s === "bearish" ? -1 : 0;
+    const inst      = institutional;
+    const hfBonus   = b(inst.hedgeFundSignal)   * 0.08; // hedge fund 13F
+    const insBonus  = b(inst.insiderSignal)      * 0.07; // insider transactions
+    const congBonus = b(inst.congressSignal)     * 0.06; // congressional trades
+    const offBonus  = b(inst.offExchangeSignal)  * 0.04; // dark pool
+    // Reduce score if spam detected in sentiment
+    const spamPenalty = sentiment.spamDetected ? -Math.abs(sentiment.compositeScore) * 0.5 : 0;
 
     const finalScore = parseFloat(
       Math.max(-1, Math.min(1,
-        sentiment.compositeScore + instBonus + insiderBonus + congressBonus
+        sentiment.compositeScore + spamPenalty + hfBonus + insBonus + congBonus + offBonus
       )).toFixed(3)
     );
 
