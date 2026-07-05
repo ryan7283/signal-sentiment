@@ -143,7 +143,7 @@ async function fetchInstitutionalData(ticker, type) {
     let topSeller        = null;
 
     const instRes = await fetch(
-      `https://api.quiverquant.com/beta/historical/institutionalownership/${ticker}`,
+      `https://api.quiverquant.com/beta/historical/hedgefunds/${ticker}`,
       { headers }
     );
 
@@ -154,13 +154,20 @@ async function fetchInstitutionalData(ticker, type) {
         const latest   = instData[0];
         const previous = instData[1];
 
-        // Quiver field names: Shares, Holders, PercentOwnership (as decimal e.g. 0.45)
-        instHolders   = latest.Holders || latest.holders || null;
-        const pct     = latest.PercentOwnership || latest.percentOwnership;
-        instOwnership = pct ? `${(parseFloat(pct) * 100).toFixed(1)}%` : null;
+        // Quiver hedgefunds endpoint returns array of fund positions
+        // Each entry: { Date, Owner (fund name), Shares, PercentOwnership }
+        // Group by date to get most recent quarter vs previous quarter
+        const dates     = [...new Set(instData.map(d => d.Date))].sort().reverse();
+        const latestQ   = instData.filter(d => d.Date === dates[0]);
+        const previousQ = dates[1] ? instData.filter(d => d.Date === dates[1]) : [];
 
-        const latestShares   = latest.Shares   || latest.shares   || 0;
-        const previousShares = previous?.Shares || previous?.shares || 0;
+        const latestShares   = latestQ.reduce((s, d)   => s + (parseFloat(d.Shares)   || 0), 0);
+        const previousShares = previousQ.reduce((s, d) => s + (parseFloat(d.Shares)   || 0), 0);
+        instHolders          = latestQ.length;
+        topBuyer             = latestQ[0]?.Owner || null;
+
+        const pct     = latestQ[0]?.PercentOwnership;
+        instOwnership = pct ? `${(parseFloat(pct) * 100).toFixed(1)}%` : null;
 
         if (latestShares && previousShares) {
           instChangeShares = latestShares - previousShares;
@@ -168,7 +175,7 @@ async function fetchInstitutionalData(ticker, type) {
                            : instChangeShares < 0 ? "bearish"
                            : "neutral";
         } else if (latestShares > 0) {
-          instSentiment = "neutral"; // have data but no prior quarter to compare
+          instSentiment = "neutral";
         }
       }
     } else {
