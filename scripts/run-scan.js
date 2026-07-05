@@ -107,29 +107,65 @@ async function fetchInsiderData(ticker, type) {
   const headers = { "User-Agent": "SIGNAL ryan7283@github.io" };
 
   try {
-    // Step 1: Find CIK using SEC's ticker → CIK map
-    // This file maps tickers like "PLTR" to their numeric CIK
-    const mapRes = await fetch(
-      "https://www.sec.gov/files/company_tickers.json",
-      { headers }
-    );
+    // Step 1: Look up CIK — use cache if available, otherwise look up from SEC map
+    // The SEC ticker map is downloaded ONCE per scan run and cached in memory
+    let cikPadded, cikRaw;
 
-    if (!mapRes.ok) {
-      return buildEmptyInsider(`SEC ticker map unavailable (${mapRes.status})`);
+    // Known CIKs hardcoded as fallback — these never change
+    const KNOWN_CIKS = {
+      PLTR: "0001321655", AFRM: "0001820953", AMZN: "0001018724",
+      KEEL: null,         APLD: "0001144879", IREN: "0001878848",
+      TSLA: "0001318605", VST:  "0001692819", QXO:  "0001236275",
+      CRWD: "0001517396", NVDA: "0001045810", META: "0001326801",
+      MSFT: "0000789019", GOOG: "0001652044", AAPL: "0000320193",
+    };
+
+    const knownCik = KNOWN_CIKS[ticker.toUpperCase()];
+
+    if (knownCik) {
+      // Use hardcoded CIK — instant, no API call
+      cikPadded = knownCik;
+      cikRaw    = parseInt(knownCik);
+      console.log(`    [${ticker}] CIK: ${cikPadded} (known)`);
+    } else if (global._secTickerMap) {
+      // Use cached ticker map from earlier in this scan run
+      const entry = Object.values(global._secTickerMap).find(
+        e => (e.ticker || "").toUpperCase() === ticker.toUpperCase()
+      );
+      if (entry) {
+        cikPadded = String(entry.cik_str).padStart(10, "0");
+        cikRaw    = parseInt(entry.cik_str);
+        console.log(`    [${ticker}] CIK: ${cikPadded} (from cache)`);
+      } else {
+        return buildEmptyInsider(`${ticker} not found in SEC registry`);
+      }
+    } else {
+      // Download the SEC ticker map once and cache it globally
+      console.log(`    [${ticker}] Downloading SEC ticker map...`);
+      await sleep(1000); // be polite to SEC servers
+      const mapRes = await fetch(
+        "https://www.sec.gov/files/company_tickers.json",
+        { headers }
+      );
+      if (!mapRes.ok) {
+        return buildEmptyInsider(`SEC ticker map unavailable (${mapRes.status})`);
+      }
+      global._secTickerMap = await mapRes.json();
+
+      const entry = Object.values(global._secTickerMap).find(
+        e => (e.ticker || "").toUpperCase() === ticker.toUpperCase()
+      );
+      if (!entry) {
+        return buildEmptyInsider(`${ticker} not found in SEC registry`);
+      }
+      cikPadded = String(entry.cik_str).padStart(10, "0");
+      cikRaw    = parseInt(entry.cik_str);
+      console.log(`    [${ticker}] CIK: ${cikPadded} (from SEC map)`);
     }
 
-    const tickerMap = await mapRes.json();
-    const entry = Object.values(tickerMap).find(
-      e => (e.ticker || "").toUpperCase() === ticker.toUpperCase()
-    );
-
-    if (!entry) {
-      return buildEmptyInsider(`${ticker} not found in SEC ticker registry`);
+    if (!cikPadded) {
+      return buildEmptyInsider(`${ticker} — no CIK available (may be private or ETF)`);
     }
-
-    const cikPadded = String(entry.cik_str).padStart(10, "0");
-    const cikRaw    = parseInt(entry.cik_str);
-    console.log(`    [${ticker}] CIK: ${cikPadded} (${entry.title})`);
 
     // Step 2: Fetch recent filings from SEC submissions API
     const subRes = await fetch(
