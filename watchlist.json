@@ -1,103 +1,103 @@
 {
-  "lastUpdated": "2026-07-03",
+  "lastUpdated": "2026-07-05",
   "tickers": [
     {
       "ticker": "PLTR",
       "name": "Palantir Technologies",
       "type": "stock",
       "sector": "AI Software / Defense Tech",
-      "query": "$PLTR OR #PLTR OR \"Palantir\" OR \"Palantir Technologies\" OR \"Alex Karp\" OR \"AIP platform\""
+      "query": "($PLTR OR #PLTR OR \"Palantir stock\" OR \"Palantir Technologies\" OR \"Alex Karp\" OR \"Palantir AIP\" OR \"Palantir earnings\")"
     },
     {
       "ticker": "AFRM",
       "name": "Affirm Holdings",
       "type": "stock",
       "sector": "Fintech / BNPL",
-      "query": "$AFRM OR #AFRM OR \"Affirm\" OR \"Affirm Holdings\" OR \"BNPL\" OR \"buy now pay later affirm\""
+      "query": "($AFRM OR #AFRM OR \"Affirm Holdings\" OR \"Affirm stock\" OR \"Affirm BNPL\" OR \"Affirm earnings\" OR \"Affirm IPO\")"
     },
     {
       "ticker": "IBIT",
       "name": "iShares Bitcoin ETF",
       "type": "etf",
       "sector": "Crypto ETF",
-      "query": "$IBIT OR #IBIT OR \"iShares bitcoin ETF\" OR \"BlackRock bitcoin ETF\" OR \"IBIT ETF\""
+      "query": "($IBIT OR #IBIT OR \"iShares bitcoin ETF\" OR \"BlackRock bitcoin ETF\" OR \"IBIT ETF\" OR \"IBIT flows\")"
     },
     {
       "ticker": "AMZN",
       "name": "Amazon",
       "type": "stock",
       "sector": "Cloud / E-Commerce / AI",
-      "query": "$AMZN OR #AMZN OR \"Amazon stock\" OR \"AWS earnings\" OR \"Amazon AI\" OR \"Amazon Prime\""
+      "query": "($AMZN OR #AMZN OR \"Amazon stock\" OR \"AWS earnings\" OR \"Amazon earnings\" OR \"Amazon AI\" OR \"Amazon Web Services stock\")"
     },
     {
       "ticker": "KEEL",
       "name": "Keelvar",
       "type": "stock",
       "sector": "Supply Chain AI / SaaS",
-      "query": "$KEEL OR #KEEL OR \"Keelvar\" OR \"Keelvar stock\" OR \"supply chain AI software\""
+      "query": "($KEEL OR #KEEL OR \"Keelvar\" OR \"Keelvar AI\" OR \"Keelvar stock\" OR \"Keelvar IPO\")"
     },
     {
       "ticker": "APLD",
       "name": "Applied Digital",
       "type": "stock",
       "sector": "AI Infrastructure / HPC / Neocloud",
-      "query": "$APLD OR #APLD OR \"Applied Digital\" OR \"Applied Digital Corp\" OR \"neocloud APLD\" OR \"HPC data center APLD\""
+      "query": "($APLD OR #APLD OR \"Applied Digital\" OR \"Applied Digital Corp\" OR \"Applied Digital stock\" OR \"Applied Digital HPC\" OR \"Applied Digital earnings\")"
     },
     {
       "ticker": "IREN",
       "name": "Iris Energy",
       "type": "stock",
       "sector": "AI Infrastructure / HPC / Bitcoin Mining",
-      "query": "$IREN OR #IREN OR \"Iris Energy\" OR \"IREN stock\" OR \"Iris Energy HPC\" OR \"Iris Energy bitcoin\""
+      "query": "($IREN OR #IREN OR \"Iris Energy\" OR \"Iris Energy stock\" OR \"Iris Energy HPC\" OR \"Iris Energy bitcoin\" OR \"Iris Energy earnings\")"
     },
     {
       "ticker": "FOTO",
       "name": "FOTO ETF",
       "type": "etf",
       "sector": "Photography / Travel ETF",
-      "query": "$FOTO OR #FOTO OR \"FOTO ETF\" OR \"photography ETF\" OR \"travel photography fund\""
+      "query": "($FOTO OR #FOTO OR \"FOTO ETF\" OR \"photography ETF\" OR \"Fotoware ETF\")"
     },
     {
       "ticker": "NASA",
       "name": "Procure Space ETF",
       "type": "etf",
       "sector": "Space / Aerospace ETF",
-      "query": "$NASA OR #NASA ETF OR \"Procure Space ETF\" OR \"space ETF\" OR \"aerospace ETF NASA\" OR \"RKLB ETF\" OR \"rocket lab ETF\""
+      "query": "($NASA ETF OR #NASA ETF OR \"Procure Space ETF\" OR \"space ETF\" OR \"aerospace ETF\" OR \"NASA ETF fund\" OR \"RKLB ETF\")"
     },
     {
       "ticker": "AIPO",
       "name": "AI Powered IPO ETF",
       "type": "etf",
       "sector": "AI / IPO ETF",
-      "query": "$AIPO OR #AIPO OR \"AI Powered IPO\" OR \"AIPO ETF\" OR \"IPO ETF AI\" OR \"Renaissance IPO ETF\""
+      "query": "($AIPO OR #AIPO OR \"AI Powered IPO ETF\" OR \"AIPO ETF\" OR \"AI IPO fund\")"
     },
     {
       "ticker": "TSLA",
       "name": "Tesla",
       "type": "stock",
       "sector": "EV / Autonomous / Robotics",
-      "query": "$TSLA OR #TSLA OR \"Tesla stock\" OR \"Elon Musk Tesla\" OR \"Tesla earnings\" OR \"Tesla FSD\" OR \"Tesla Optimus\""
+      "query": "($TSLA OR #TSLA OR \"Tesla stock\" OR \"Tesla earnings\" OR \"Tesla FSD\" OR \"Tesla Optimus\" OR \"Tesla Elon\")"
     },
     {
       "ticker": "CIBR",
       "name": "First Trust Cybersecurity ETF",
       "type": "etf",
       "sector": "Cybersecurity ETF",
-      "query": "$CIBR OR #CIBR OR \"CIBR ETF\" OR \"First Trust cybersecurity\" OR \"cybersecurity ETF CIBR\""
+      "query": "($CIBR OR #CIBR OR \"CIBR ETF\" OR \"First Trust cybersecurity ETF\" OR \"cybersecurity ETF CIBR\")"
     },
     {
       "ticker": "VST",
       "name": "Vistra Corp",
       "type": "stock",
       "sector": "Power / Energy / AI Infrastructure",
-      "query": "$VST OR #VST OR \"Vistra\" OR \"Vistra Corp\" OR \"Vistra energy\" OR \"Vistra AI power\" OR \"Vistra KKR\""
+      "query": "($VST OR #VST OR \"Vistra Corp\" OR \"Vistra stock\" OR \"Vistra energy\" OR \"Vistra earnings\" OR \"Vistra nuclear\" OR \"Vistra AI power\")"
     },
     {
       "ticker": "QXO",
       "name": "QXO Inc",
       "type": "stock",
       "sector": "Building Products Distribution / M&A Rollup",
-      "query": "$QXO OR #QXO OR \"QXO stock\" OR \"QXO building\" OR \"Brad Jacobs QXO\" OR \"QXO acquisition\" OR \"Beacon Building QXO\""
+      "query": "($QXO OR #QXO OR \"QXO stock\" OR \"QXO Inc\" OR \"Brad Jacobs QXO\" OR \"QXO acquisition\" OR \"QXO earnings\")"
     }
   ]
 }
