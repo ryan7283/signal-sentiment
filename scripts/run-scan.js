@@ -17,6 +17,31 @@ function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
+// ─── RESILIENT FIELD RESOLVER ─────────────────────────────────────────────────
+// Tries multiple field name variants so the code never silently returns wrong data
+// If none match, logs a warning so field name issues are caught immediately
+
+function getField(obj, ...keys) {
+  for (const key of keys) {
+    if (obj[key] !== undefined && obj[key] !== null) return obj[key];
+  }
+  return null;
+}
+
+function validateRecord(ticker, endpoint, record, requiredFields) {
+  const missing = requiredFields.filter(f => {
+    const variants = Array.isArray(f) ? f : [f];
+    return !variants.some(v => record[v] !== undefined && record[v] !== null);
+  });
+  if (missing.length > 0) {
+    console.log(`  ⚠ [${ticker}] ${endpoint}: unexpected field names. Missing: ${JSON.stringify(missing)}. Got: ${Object.keys(record).join(", ")}`);
+    return false;
+  }
+  return true;
+}
+
+
+
 // ─── LOAD WATCHLIST ───────────────────────────────────────────────────────────
 
 function loadWatchlist() {
@@ -58,56 +83,80 @@ function calcTrend(todayScore, yesterday) {
 // ─── TWITTER FETCH ────────────────────────────────────────────────────────────
 
 async function fetchTweets(ticker, query) {
-  const startTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-
-  // Quality filters:
-  // - -is:retweet → original posts only
-  // - lang:en     → English only
-  // Note: min_faves removed — not supported on Twitter Basic tier
+  const startTime    = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const qualityFilters = `-is:retweet lang:en`;
-  const fullQuery      = `(${query}) ${qualityFilters}`;
-  const encodedQuery   = encodeURIComponent(fullQuery);
+  const encodedQuery   = encodeURIComponent(`(${query}) ${qualityFilters}`);
 
-  const url = [
-    `https://api.twitter.com/2/tweets/search/recent`,
-    `?query=${encodedQuery}`,
-    `&max_results=50`,
-    `&start_time=${startTime}`,
-    `&tweet.fields=created_at,public_metrics,author_id`,
-  ].join("");
+  // Twitter API v2 confirmed response structure:
+  // { data: [ { id, text, created_at, public_metrics, author_id } ], meta: { result_count } }
+  // On zero results: { meta: { result_count: 0 } } with no data field
+  // On error: { errors: [...] } or HTTP 4xx/5xx
+  const TWITTER_FIELDS = "tweet.fields=created_at,public_metrics,author_id";
 
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${process.env.TWITTER_BEARER_TOKEN}` },
-  });
+  async function doFetch(queryStr) {
+    const url = [
+      `https://api.twitter.com/2/tweets/search/recent`,
+      `?query=${queryStr}`,
+      `&max_results=50`,
+      `&start_time=${startTime}`,
+      `&${TWITTER_FIELDS}`,
+    ].join("");
 
-  if (!res.ok) {
-    const errText = await res.text().catch(() => "");
-    console.error(`  [${ticker}] Twitter error: ${res.status} — ${errText.slice(0, 120)}`);
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${process.env.TWITTER_BEARER_TOKEN}` },
+    });
 
-    // If min_faves filter causes issues (some API tiers don't support it),
-    // fall back to basic quality filters only
-    if (res.status === 400) {
-      console.log(`  [${ticker}] Retrying without engagement filter...`);
-      const fallbackQuery   = encodeURIComponent(`(${query}) -is:retweet lang:en`);
-      const fallbackUrl     = [
-        `https://api.twitter.com/2/tweets/search/recent`,
-        `?query=${fallbackQuery}`,
-        `&max_results=50`,
-        `&start_time=${startTime}`,
-        `&tweet.fields=created_at,public_metrics`,
-      ].join("");
-      const fallbackRes = await fetch(fallbackUrl, {
-        headers: { Authorization: `Bearer ${process.env.TWITTER_BEARER_TOKEN}` },
-      });
-      if (!fallbackRes.ok) return [];
-      const fallbackData = await fallbackRes.json();
-      return (fallbackData.data || []).map(t => t.text);
+    // Handle HTTP errors
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      console.error(`  [${ticker}] Twitter HTTP ${res.status}: ${errText.slice(0, 150)}`);
+      return null; // null = fetch failed, distinct from [] which means 0 results
     }
+
+    const json = await res.json();
+
+    // Check for API-level errors in response body
+    if (json.errors && json.errors.length > 0) {
+      console.error(`  [${ticker}] Twitter API error: ${JSON.stringify(json.errors[0])}`);
+      return null;
+    }
+
+    // Validate expected response structure
+    if (json.data !== undefined && !Array.isArray(json.data)) {
+      console.error(`  [${ticker}] Twitter unexpected response structure: data is not an array. Got: ${typeof json.data}`);
+      return null;
+    }
+
+    // Validate tweet fields on first record
+    if (json.data && json.data.length > 0) {
+      const first = json.data[0];
+      if (first.text === undefined) {
+        console.error(`  [${ticker}] Twitter: 'text' field missing from tweet. Available fields: ${Object.keys(first).join(", ")}`);
+        return null;
+      }
+    }
+
+    // Return texts — empty array if no results (normal, not an error)
+    return (json.data || []).map(t => t.text).filter(Boolean);
+  }
+
+  // Primary fetch attempt
+  let tweets = await doFetch(encodedQuery);
+
+  // If primary failed with a query error, retry with simpler query
+  if (tweets === null) {
+    console.log(`  [${ticker}] Retrying with simplified query...`);
+    const simpleQuery = encodeURIComponent(`$${ticker} -is:retweet lang:en`);
+    tweets = await doFetch(simpleQuery);
+  }
+
+  // If still null, return empty and log clearly
+  if (tweets === null) {
+    console.error(`  [${ticker}] Twitter fetch failed after retry — returning 0 posts`);
     return [];
   }
 
-  const data = await res.json();
-  return (data.data || []).map(t => t.text);
+  return tweets;
 }
 
 // ─── TWEET QUALITY FILTER ─────────────────────────────────────────────────────
@@ -207,13 +256,14 @@ async function fetchInstitutionalData(ticker, type) {
     );
     if (res.ok) {
       const data   = await res.json();
+      if (data.length > 0) validateRecord(ticker, "Congress", data[0], [["TransactionDate","Filed","Date"], "Transaction"]);
       const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 365);
       const recent = (data || []).filter(t => {
         const d = new Date(t.TransactionDate || t.Filed || t.Date);
         return d > cutoff;
       });
-      const buys  = recent.filter(t => (t.Transaction || "").toLowerCase().includes("purchase"));
-      const sells = recent.filter(t => (t.Transaction || "").toLowerCase().includes("sale"));
+      const buys  = recent.filter(t => (getField(t, "Transaction", "transaction") || "").toLowerCase().includes("purchase"));
+      const sells = recent.filter(t => (getField(t, "Transaction", "transaction") || "").toLowerCase().includes("sale"));
       congressBuys = buys.length; congressSells = sells.length;
       console.log(`  [${ticker}] Congress: ${data.length} total, ${recent.length} recent — ${buys.length} buys, ${sells.length} sells`);
       if (buys.length > sells.length && buys.length > 0) {
@@ -241,27 +291,25 @@ async function fetchInstitutionalData(ticker, type) {
       { headers }
     );
     if (res.ok) {
-      const data   = await res.json();
-
+      const data = await res.json();
+      if (data.length > 0) validateRecord(ticker, "Insiders", data[0], [["TransactionCode","AcquiredDisposedCode","AcquiredDisposed"], "Date"]);
       const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 180);
-      const recent = (data || []).filter(t => new Date(t.Date) > cutoff);
-      // Confirmed field names from Quiver API:
-      // TransactionCode: "P" = open-market purchase, "S" = open-market sale
-      // AcquiredDisposedCode: "A" = acquired, "D" = disposed
-      // We use TransactionCode as primary since it distinguishes open-market trades
-      const buys   = recent.filter(t =>
-        t.TransactionCode === "P" ||
-        t.AcquiredDisposedCode === "A"
+      const recent = (data || []).filter(t => new Date(getField(t,"Date","date")) > cutoff);
+      // TransactionCode: P=open-market purchase, S=open-market sale (confirmed from live API response)
+      // Fallbacks: AcquiredDisposedCode A=acquired, D=disposed
+      const buys  = recent.filter(t =>
+        getField(t,"TransactionCode") === "P" ||
+        getField(t,"AcquiredDisposedCode","AcquiredDisposed") === "A"
       );
-      const sells  = recent.filter(t =>
-        t.TransactionCode === "S" ||
-        t.AcquiredDisposedCode === "D"
+      const sells = recent.filter(t =>
+        getField(t,"TransactionCode") === "S" ||
+        getField(t,"AcquiredDisposedCode","AcquiredDisposed") === "D"
       );
       console.log(`  [${ticker}] Insiders: ${data.length} total, ${recent.length} recent — ${buys.length} buys, ${sells.length} sells`);
       if (buys.length > sells.length && buys.length > 0) {
         insiderSignal = "bullish";
-        const topBuyer = recent.find(t => t.TransactionCode === "P")?.Name || "";
-        insiderNote = `${buys.length} open-market purchase(s) vs ${sells.length} sale(s) — last 180 days${topBuyer ? ` · Latest: ${topBuyer}` : ""}`;
+        const topBuyer = getField(recent.find(t => getField(t,"TransactionCode")==="P") || {}, "Name","name") || "";
+        insiderNote = `${buys.length} open-market purchase(s) vs ${sells.length} sale(s) — last 180 days${topBuyer ? ` · ${topBuyer}` : ""}`;
       } else if (sells.length > buys.length && sells.length > 0) {
         insiderSignal = "bearish";
         insiderNote = `${sells.length} open-market sale(s) vs ${buys.length} purchase(s) — last 180 days`;
@@ -300,11 +348,13 @@ async function fetchInstitutionalData(ticker, type) {
 
         console.log(`  [${ticker}] HedgeFunds: ${data.length} records, latest Q: ${latestPeriod}, prev Q: ${previousPeriod || "none"}, ${latestQ.length} funds latest`);
 
-        // Confirmed fields from Quiver API:
-        // Fund = fund name, Change_Share = share count change vs prior quarter
-        // Change_Share > 0 means buying, < 0 means selling, Quiver pre-computes this
-        const buyers  = latestQ.filter(d => (parseFloat(d.Change_Share) || 0) > 0);
-        const sellers = latestQ.filter(d => (parseFloat(d.Change_Share) || 0) < 0);
+        if (latestQ.length > 0) validateRecord(ticker, "HedgeFunds", latestQ[0], [["Fund","Owner"], ["Change_Share","Change"], "ReportPeriod"]);
+        // Change_Share = share count change vs prior quarter (confirmed from API)
+        // Fund = fund name (confirmed from API)
+        const changeField = latestQ[0]?.Change_Share !== undefined ? "Change_Share" : "Change";
+        const nameField   = latestQ[0]?.Fund !== undefined ? "Fund" : "Owner";
+        const buyers  = latestQ.filter(d => (parseFloat(getField(d, "Change_Share", "Change")) || 0) > 0);
+        const sellers = latestQ.filter(d => (parseFloat(getField(d, "Change_Share", "Change")) || 0) < 0);
 
         hedgeFundBuys  = buyers.length;
         hedgeFundSells = sellers.length;
@@ -313,7 +363,7 @@ async function fetchInstitutionalData(ticker, type) {
         const topBuyerFund = buyers.sort((a, b) =>
           (parseFloat(b.Change_Share) || 0) - (parseFloat(a.Change_Share) || 0)
         )[0];
-        topHedgeFund = topBuyerFund?.Fund || latestQ[0]?.Fund || null;
+        topHedgeFund = getField(topBuyerFund || latestQ[0] || {}, "Fund", "Owner");
 
         console.log(`  [${ticker}] HedgeFunds quarter ${latestPeriod}: ${buyers.length} buying, ${sellers.length} selling, ${latestQ.length} total funds`);
 
@@ -346,9 +396,10 @@ async function fetchInstitutionalData(ticker, type) {
       { headers }
     );
     if (res.ok) {
-      const data   = await res.json();
+      const data = await res.json();
+      if ((data||[]).length > 0) validateRecord(ticker, "GovContracts", data[0], [["Date","date"],["Amount","amount"]]);
       const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 1);
-      const recent = (data || []).filter(d => new Date(d.Date) > cutoff);
+      const recent = (data || []).filter(d => new Date(getField(d,"Date","date")) > cutoff);
       console.log(`  [${ticker}] GovContracts: ${(data||[]).length} total, ${recent.length} recent`);
       if (recent.length > 0) {
         hasGovContracts  = true;
@@ -373,9 +424,10 @@ async function fetchInstitutionalData(ticker, type) {
       { headers }
     );
     if (res.ok) {
-      const data   = await res.json();
+      const data = await res.json();
+      if ((data||[]).length > 0) validateRecord(ticker, "GovContracts", data[0], [["Date","date"],["Amount","amount"]]);
       const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 1);
-      const recent = (data || []).filter(d => new Date(d.Date) > cutoff);
+      const recent = (data || []).filter(d => new Date(getField(d,"Date","date")) > cutoff);
       console.log(`  [${ticker}] Lobbying: ${(data||[]).length} total, ${recent.length} recent`);
       if (recent.length > 0) {
         lobbyingTotal = recent.reduce((s, d) => s + (parseFloat(d.Amount) || 0), 0);
