@@ -1,6 +1,6 @@
-// scripts/run-scan.js — SIGNAL v5
+// scripts/run-scan.js — SIGNAL v7
+// X/Twitter sentiment + Quiver Quant institutional data (13F + congressional trades)
 // Reads watchlist from watchlist.json
-// Twitter sentiment + SEC EDGAR Form 4 insider trading (free)
 // Runs every weekday at 7am CT via GitHub Actions
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -11,12 +11,6 @@ import fs from "fs";
 function getQuarterLabel() {
   const now = new Date();
   return `Q${Math.floor(now.getMonth() / 3) + 1} ${now.getFullYear()}`;
-}
-
-function get90DaysAgo() {
-  const d = new Date();
-  d.setDate(d.getDate() - 90);
-  return d.toISOString().slice(0, 10);
 }
 
 function sleep(ms) {
@@ -64,14 +58,24 @@ function calcTrend(todayScore, yesterday) {
 // ─── TWITTER FETCH ────────────────────────────────────────────────────────────
 
 async function fetchTweets(ticker, query) {
-  const startTime    = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const encodedQuery = encodeURIComponent(`(${query}) -is:retweet lang:en`);
+  const startTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  // Quality filters applied to every search:
+  // - min_faves:5     → only posts with 5+ likes (eliminates bots, spam, zero-engagement noise)
+  // - -is:retweet     → original posts only, no retweets
+  // - lang:en         → English only
+  // - has:cashtags OR has:links → financial context (posts with $ tickers or article links)
+  // Note: is:verified removed — post-Elon it includes paid subscribers not just notable accounts
+  const qualityFilters = `-is:retweet lang:en min_faves:5`;
+  const fullQuery      = `(${query}) ${qualityFilters}`;
+  const encodedQuery   = encodeURIComponent(fullQuery);
+
   const url = [
     `https://api.twitter.com/2/tweets/search/recent`,
     `?query=${encodedQuery}`,
     `&max_results=50`,
     `&start_time=${startTime}`,
-    `&tweet.fields=created_at,public_metrics`,
+    `&tweet.fields=created_at,public_metrics,author_id`,
   ].join("");
 
   const res = await fetch(url, {
@@ -79,205 +83,215 @@ async function fetchTweets(ticker, query) {
   });
 
   if (!res.ok) {
-    console.error(`  [${ticker}] Twitter error: ${res.status}`);
+    const errText = await res.text().catch(() => "");
+    console.error(`  [${ticker}] Twitter error: ${res.status} — ${errText.slice(0, 120)}`);
+
+    // If min_faves filter causes issues (some API tiers don't support it),
+    // fall back to basic quality filters only
+    if (res.status === 400) {
+      console.log(`  [${ticker}] Retrying without engagement filter...`);
+      const fallbackQuery   = encodeURIComponent(`(${query}) -is:retweet lang:en`);
+      const fallbackUrl     = [
+        `https://api.twitter.com/2/tweets/search/recent`,
+        `?query=${fallbackQuery}`,
+        `&max_results=50`,
+        `&start_time=${startTime}`,
+        `&tweet.fields=created_at,public_metrics`,
+      ].join("");
+      const fallbackRes = await fetch(fallbackUrl, {
+        headers: { Authorization: `Bearer ${process.env.TWITTER_BEARER_TOKEN}` },
+      });
+      if (!fallbackRes.ok) return [];
+      const fallbackData = await fallbackRes.json();
+      return (fallbackData.data || []).map(t => t.text);
+    }
     return [];
   }
+
   const data = await res.json();
   return (data.data || []).map(t => t.text);
 }
 
-// ─── SEC EDGAR — FORM 4 INSIDER TRADING (FREE) ───────────────────────────────
+// ─── QUIVER QUANT INSTITUTIONAL DATA ─────────────────────────────────────────
+// Requires QUIVER_QUANT_API_KEY in GitHub Secrets
+// Sign up at quiverquant.com — Researcher plan ($25/mo)
+// Provides: 13F institutional holdings, congressional trades, insider transactions
 
-async function fetchInsiderData(ticker, type) {
-  // ETFs don't have insider filings
+async function fetchInstitutionalData(ticker, type) {
+  const apiKey = process.env.QUIVER_QUANT_API_KEY;
+
+  // ETFs: skip insider/congressional data, only get institutional if available
   if (type === "etf") {
-    return {
-      available:        false,
-      insiderSignal:    "neutral",
-      insiderNote:      "ETFs do not have insider filing data",
-      recentForm4Count: 0,
-      buyCount:         0,
-      sellCount:        0,
-      instSentiment:    "n/a",
-      instNote:         "13F data requires Quiver Quant ($25/mo)",
-      quarterCovered:   getQuarterLabel(),
-    };
+    return buildETFInstitutional();
   }
 
-  const headers = { "User-Agent": "SIGNAL ryan7283@github.io" };
+  // No API key configured — return placeholder
+  if (!apiKey) {
+    return buildNoKeyInstitutional();
+  }
+
+  const headers = {
+    Authorization: `Token ${apiKey}`,
+    Accept:        "application/json",
+  };
 
   try {
-    // Step 1: Look up CIK — use cache if available, otherwise look up from SEC map
-    // The SEC ticker map is downloaded ONCE per scan run and cached in memory
-    let cikPadded, cikRaw;
+    // ── 1. Institutional Ownership (13F filings) ─────────────────────────────
+    let instSentiment    = "neutral";
+    let instOwnership    = null;
+    let instChangeShares = null;
+    let instHolders      = null;
+    let topBuyer         = null;
+    let topSeller        = null;
 
-    // Known CIKs hardcoded as fallback — these never change
-    const KNOWN_CIKS = {
-      PLTR: "0001321655", AFRM: "0001820953", AMZN: "0001018724",
-      KEEL: null,         APLD: "0001144879", IREN: "0001878848",
-      TSLA: "0001318605", VST:  "0001692819", QXO:  "0001236275",
-      CRWD: "0001517396", NVDA: "0001045810", META: "0001326801",
-      MSFT: "0000789019", GOOG: "0001652044", AAPL: "0000320193",
-    };
-
-    const knownCik = KNOWN_CIKS[ticker.toUpperCase()];
-
-    if (knownCik) {
-      // Use hardcoded CIK — instant, no API call
-      cikPadded = knownCik;
-      cikRaw    = parseInt(knownCik);
-      console.log(`    [${ticker}] CIK: ${cikPadded} (known)`);
-    } else if (global._secTickerMap) {
-      // Use cached ticker map from earlier in this scan run
-      const entry = Object.values(global._secTickerMap).find(
-        e => (e.ticker || "").toUpperCase() === ticker.toUpperCase()
-      );
-      if (entry) {
-        cikPadded = String(entry.cik_str).padStart(10, "0");
-        cikRaw    = parseInt(entry.cik_str);
-        console.log(`    [${ticker}] CIK: ${cikPadded} (from cache)`);
-      } else {
-        return buildEmptyInsider(`${ticker} not found in SEC registry`);
-      }
-    } else {
-      // Download the SEC ticker map once and cache it globally
-      console.log(`    [${ticker}] Downloading SEC ticker map...`);
-      await sleep(1000); // be polite to SEC servers
-      const mapRes = await fetch(
-        "https://www.sec.gov/files/company_tickers.json",
-        { headers }
-      );
-      if (!mapRes.ok) {
-        return buildEmptyInsider(`SEC ticker map unavailable (${mapRes.status})`);
-      }
-      global._secTickerMap = await mapRes.json();
-
-      const entry = Object.values(global._secTickerMap).find(
-        e => (e.ticker || "").toUpperCase() === ticker.toUpperCase()
-      );
-      if (!entry) {
-        return buildEmptyInsider(`${ticker} not found in SEC registry`);
-      }
-      cikPadded = String(entry.cik_str).padStart(10, "0");
-      cikRaw    = parseInt(entry.cik_str);
-      console.log(`    [${ticker}] CIK: ${cikPadded} (from SEC map)`);
-    }
-
-    if (!cikPadded) {
-      return buildEmptyInsider(`${ticker} — no CIK available (may be private or ETF)`);
-    }
-
-    // Step 2: Fetch recent filings from SEC submissions API
-    await sleep(500); // be polite to SEC servers
-    const subRes = await fetch(
-      `https://data.sec.gov/submissions/CIK${cikPadded}.json`,
+    const instRes = await fetch(
+      `https://api.quiverquant.com/beta/historical/institutionalownership/${ticker}`,
       { headers }
     );
 
-    if (!subRes.ok) {
-      console.log(`    [${ticker}] submissions API failed: ${subRes.status} ${subRes.statusText}`);
-      return buildEmptyInsider(`SEC submissions API error (${subRes.status})`);
-    }
+    if (instRes.ok) {
+      const instData = await instRes.json();
+      if (instData && instData.length > 0) {
+        const latest    = instData[0];
+        const previous  = instData[1];
+        instOwnership    = latest.PercentOwnership ? `${(latest.PercentOwnership * 100).toFixed(1)}%` : null;
+        instHolders      = latest.Holders || null;
 
-    const submissions = await subRes.json();
-    const recent      = submissions.filings?.recent || {};
-    const forms       = recent.form        || [];
-    const dates       = recent.filingDate  || [];
-    const accessions  = recent.accessionNumber || [];
-    const primaryDocs = recent.primaryDocument  || [];
-
-    console.log(`    [${ticker}] Total filings in submissions: ${forms.length}`);
-
-    // Step 3: Find Form 4 filings from last 90 days
-    const cutoffDate  = get90DaysAgo();
-    const form4Entries = [];
-
-    for (let i = 0; i < forms.length; i++) {
-      if (forms[i] !== "4") continue;
-      if (dates[i] < cutoffDate) continue;
-      form4Entries.push({ idx: i, date: dates[i], acc: accessions[i], doc: primaryDocs[i] });
-    }
-
-    const recentForm4Count = form4Entries.length;
-    console.log(`    [${ticker}] Form 4 filings in last 90 days: ${recentForm4Count}`);
-
-    // Step 4: Read actual XML of up to 5 recent Form 4s for buy/sell codes
-    let buyCount = 0, sellCount = 0;
-
-    for (const { acc, doc } of form4Entries.slice(0, 5)) {
-      try {
-        if (!acc || !doc) continue;
-        const cleanAcc = acc.replace(/-/g, "");
-        const xmlUrl   = `https://www.sec.gov/Archives/edgar/data/${cikRaw}/${cleanAcc}/${doc}`;
-        const xmlRes   = await fetch(xmlUrl, { headers });
-        if (!xmlRes.ok) {
-          console.log(`    [${ticker}] Form 4 XML fetch failed: ${xmlRes.status} for ${doc}`);
-          continue;
+        // Calculate net share change vs prior quarter
+        if (latest.Shares && previous?.Shares) {
+          instChangeShares = latest.Shares - previous.Shares;
+          instSentiment    = instChangeShares > 0 ? "bullish"
+                           : instChangeShares < 0 ? "bearish"
+                           : "neutral";
         }
-        const xml = await xmlRes.text();
-
-        // Transaction code P = open market purchase, S = open market sale
-        const purchases = (xml.match(/<transactionCode>P<\/transactionCode>/g) || []).length;
-        const sales     = (xml.match(/<transactionCode>S<\/transactionCode>/g) || []).length;
-        console.log(`    [${ticker}] Form 4 ${doc}: P=${purchases} S=${sales}`);
-        buyCount  += purchases;
-        sellCount += sales;
-      } catch (e) {
-        console.log(`    [${ticker}] Form 4 parse error: ${e.message}`);
       }
+    } else {
+      console.log(`  [${ticker}] Quiver institutional: ${instRes.status}`);
     }
 
-    // Step 5: Derive insider signal
-    let insiderSignal = "neutral";
-    let insiderNote;
+    await sleep(300);
 
-    if (recentForm4Count === 0) {
-      insiderNote = "No Form 4 insider filings in last 90 days";
-    } else if (buyCount > 0 && buyCount > sellCount) {
-      insiderSignal = "bullish";
-      insiderNote   = `${recentForm4Count} filing(s) — ${buyCount} open-market purchase(s) vs ${sellCount} sale(s)`;
-    } else if (sellCount > 0 && sellCount > buyCount) {
-      insiderSignal = "bearish";
-      insiderNote   = `${recentForm4Count} filing(s) — ${sellCount} open-market sale(s) vs ${buyCount} purchase(s)`;
-    } else if (buyCount === 0 && sellCount === 0 && recentForm4Count > 0) {
-      insiderNote   = `${recentForm4Count} filing(s) — awards/options grants only, no open-market trades`;
+    // ── 2. Congressional Trading ──────────────────────────────────────────────
+    let congressSignal = "neutral";
+    let congressNote   = "No recent congressional trades";
+
+    const congRes = await fetch(
+      `https://api.quiverquant.com/beta/historical/congresstrading/${ticker}`,
+      { headers }
+    );
+
+    if (congRes.ok) {
+      const congData = await congRes.json();
+      if (congData && congData.length > 0) {
+        // Look at trades in last 180 days
+        const cutoff   = new Date();
+        cutoff.setDate(cutoff.getDate() - 180);
+        const recent   = congData.filter(t => new Date(t.TransactionDate) > cutoff);
+        const buys     = recent.filter(t => t.Transaction?.toLowerCase().includes("purchase"));
+        const sells    = recent.filter(t => t.Transaction?.toLowerCase().includes("sale"));
+
+        if (recent.length > 0) {
+          if (buys.length > sells.length) {
+            congressSignal = "bullish";
+            congressNote   = `${buys.length} congressional purchase(s) vs ${sells.length} sale(s) in last 180 days`;
+          } else if (sells.length > buys.length) {
+            congressSignal = "bearish";
+            congressNote   = `${sells.length} congressional sale(s) vs ${buys.length} purchase(s) in last 180 days`;
+          } else {
+            congressNote   = `${recent.length} congressional trade(s) — mixed signal`;
+          }
+        }
+      }
     } else {
-      insiderNote   = `${recentForm4Count} filing(s) — mixed signals (${buyCount} buys, ${sellCount} sells)`;
+      console.log(`  [${ticker}] Quiver congress: ${congRes.status}`);
+    }
+
+    await sleep(300);
+
+    // ── 3. Insider Trading (Form 4) ───────────────────────────────────────────
+    let insiderSignal = "neutral";
+    let insiderNote   = "No recent insider trades";
+
+    const insiderRes = await fetch(
+      `https://api.quiverquant.com/beta/historical/insiders/${ticker}`,
+      { headers }
+    );
+
+    if (insiderRes.ok) {
+      const insiderData = await insiderRes.json();
+      if (insiderData && insiderData.length > 0) {
+        const cutoff  = new Date();
+        cutoff.setDate(cutoff.getDate() - 90);
+        const recent  = insiderData.filter(t => new Date(t.Date) > cutoff);
+        const buys    = recent.filter(t => t.Transaction === "Buy" || t.AcquiredDisposed === "A");
+        const sells   = recent.filter(t => t.Transaction === "Sell" || t.AcquiredDisposed === "D");
+
+        if (recent.length > 0) {
+          if (buys.length > sells.length && buys.length > 0) {
+            insiderSignal = "bullish";
+            insiderNote   = `${buys.length} insider purchase(s) vs ${sells.length} sale(s) in last 90 days`;
+            topBuyer      = recent[0]?.Name || null;
+          } else if (sells.length > buys.length && sells.length > 0) {
+            insiderSignal = "bearish";
+            insiderNote   = `${sells.length} insider sale(s) vs ${buys.length} purchase(s) in last 90 days`;
+            topSeller     = recent[0]?.Name || null;
+          } else {
+            insiderNote   = `${recent.length} insider filing(s) — mixed signal`;
+          }
+        }
+      }
+    } else {
+      console.log(`  [${ticker}] Quiver insiders: ${insiderRes.status}`);
     }
 
     return {
+      source:           "Quiver Quant",
       available:        true,
-      cik:              cikPadded,
-      companyName:      entry.title,
+      instSentiment,
+      instOwnership,
+      instHolders,
+      instChangeShares,
+      topBuyer,
+      topSeller,
+      congressSignal,
+      congressNote,
       insiderSignal,
       insiderNote,
-      recentForm4Count,
-      buyCount,
-      sellCount,
-      instSentiment:    "n/a",
-      instNote:         "13F institutional holdings data requires Quiver Quant ($25/mo) — add QUIVER_QUANT_API_KEY to GitHub Secrets to activate",
       quarterCovered:   getQuarterLabel(),
       lastUpdated:      new Date().toISOString(),
     };
 
   } catch (e) {
-    console.error(`  [${ticker}] EDGAR error: ${e.message}`);
-    return buildEmptyInsider(e.message);
+    console.error(`  [${ticker}] Quiver error: ${e.message}`);
+    return buildNoKeyInstitutional();
   }
 }
 
-function buildEmptyInsider(reason) {
+function buildETFInstitutional() {
   return {
-    available:        false,
-    insiderSignal:    "neutral",
-    insiderNote:      reason || "Could not retrieve insider data",
-    recentForm4Count: 0,
-    buyCount:         0,
-    sellCount:        0,
-    instSentiment:    "n/a",
-    instNote:         "13F data requires Quiver Quant ($25/mo)",
-    quarterCovered:   getQuarterLabel(),
-    lastUpdated:      new Date().toISOString(),
+    source:         "N/A — ETF",
+    available:      false,
+    instSentiment:  "neutral",
+    insiderSignal:  "neutral",
+    insiderNote:    "ETFs do not have insider or congressional filing data",
+    congressSignal: "neutral",
+    congressNote:   "N/A",
+    quarterCovered: getQuarterLabel(),
+    lastUpdated:    new Date().toISOString(),
+  };
+}
+
+function buildNoKeyInstitutional() {
+  return {
+    source:         "Quiver Quant (no key)",
+    available:      false,
+    instSentiment:  "neutral",
+    insiderSignal:  "neutral",
+    insiderNote:    "Add QUIVER_QUANT_API_KEY to GitHub Secrets to activate",
+    congressSignal: "neutral",
+    congressNote:   "Add QUIVER_QUANT_API_KEY to GitHub Secrets to activate",
+    quarterCovered: getQuarterLabel(),
+    lastUpdated:    new Date().toISOString(),
   };
 }
 
@@ -314,7 +328,7 @@ async function analyzeSentiment(ticker, name, type, sector, tweets, yesterday) {
   const tweetBlock = tweets.slice(0, 30).map((t, i) => `${i + 1}. "${t}"`).join("\n");
   const context    = type === "etf"
     ? `This is an ETF (${sector}). Focus on fund flow sentiment, sector momentum, and macro themes.`
-    : `This is a stock in the ${sector} sector. Focus on company-specific sentiment, earnings expectations, and competitive positioning.`;
+    : `This is a stock in the ${sector} sector. Focus on company-specific sentiment, earnings, and competitive positioning.`;
 
   const message = await anthropic.messages.create({
     model:      "claude-sonnet-4-6",
@@ -328,7 +342,7 @@ Analyze these ${tweets.length} recent social media posts about $${ticker} (${nam
 Posts:
 ${tweetBlock}
 
-Return exactly this JSON:
+Return exactly:
 {
   "ticker": "${ticker}",
   "name": "${name}",
@@ -350,14 +364,11 @@ Return exactly this JSON:
   const raw    = message.content.find(b => b.type === "text")?.text || "{}";
   const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
   const trend  = calcTrend(parsed.sentimentScore, yesterday);
-
   const trendBonus = trend.sentimentDelta > 0 ? 0.1 : trend.sentimentDelta < 0 ? -0.1 : 0;
   const composite  = parseFloat(((parsed.sentimentScore * 0.6) + trendBonus).toFixed(3));
 
   return {
-    ...parsed,
-    type,
-    sector,
+    ...parsed, type, sector,
     tweetCount:     tweets.length,
     sentimentTrend: trend.trend,
     sentimentDelta: trend.sentimentDelta,
@@ -372,9 +383,11 @@ Return exactly this JSON:
 
 async function main() {
   const WATCHLIST = loadWatchlist();
+  const hasQuiver = !!process.env.QUIVER_QUANT_API_KEY;
 
-  console.log(`\n🔍 SIGNAL v5 — Daily Scan: ${new Date().toISOString()}`);
-  console.log(`📋 Watchlist: ${WATCHLIST.length} tickers\n`);
+  console.log(`\n🔍 SIGNAL v7 — Daily Scan: ${new Date().toISOString()}`);
+  console.log(`📋 Watchlist: ${WATCHLIST.length} tickers`);
+  console.log(`🏦 Quiver Quant: ${hasQuiver ? "✓ active" : "✗ no key — add QUIVER_QUANT_API_KEY to Secrets"}\n`);
 
   fs.mkdirSync("data",         { recursive: true });
   fs.mkdirSync("data/history", { recursive: true });
@@ -392,38 +405,48 @@ async function main() {
       ticker, name, type || "stock", sector || "",
       tweets, yesterday[ticker]
     );
-    process.stdout.write(` ${sentiment.arrow} ${sentiment.signal}`);
+    process.stdout.write(` ${sentiment.arrow} ${sentiment.signal}. Institutional...`);
 
-    process.stdout.write(`. Insider data...`);
-    const insider = await fetchInsiderData(ticker, type || "stock");
-    process.stdout.write(` ${insider.insiderSignal}\n`);
+    const institutional = await fetchInstitutionalData(ticker, type || "stock");
+    const instLabel = institutional.available
+      ? `inst:${institutional.instSentiment} insider:${institutional.insiderSignal} congress:${institutional.congressSignal}`
+      : institutional.source;
+    process.stdout.write(` ${instLabel}\n`);
 
-    // Final composite score: sentiment + trend + insider signal
-    const insiderBonus = insider.insiderSignal === "bullish" ?  0.1
-                       : insider.insiderSignal === "bearish" ? -0.1 : 0;
-    const finalScore   = parseFloat(
-      Math.max(-1, Math.min(1, sentiment.compositeScore + insiderBonus)).toFixed(3)
+    // Composite score: sentiment + trend + institutional signals
+    const instBonus     = institutional.instSentiment  === "bullish" ?  0.08
+                        : institutional.instSentiment  === "bearish" ? -0.08 : 0;
+    const insiderBonus  = institutional.insiderSignal  === "bullish" ?  0.07
+                        : institutional.insiderSignal  === "bearish" ? -0.07 : 0;
+    const congressBonus = institutional.congressSignal === "bullish" ?  0.05
+                        : institutional.congressSignal === "bearish" ? -0.05 : 0;
+
+    const finalScore = parseFloat(
+      Math.max(-1, Math.min(1,
+        sentiment.compositeScore + instBonus + insiderBonus + congressBonus
+      )).toFixed(3)
     );
-    const finalSignal  = finalScore >=  0.5  ? "STRONG_BUY"
-                       : finalScore >=  0.15 ? "BUY"
-                       : finalScore <= -0.5  ? "STRONG_SELL"
-                       : finalScore <= -0.15 ? "SELL"
-                       : "NEUTRAL";
+
+    const finalSignal = finalScore >=  0.5  ? "STRONG_BUY"
+                      : finalScore >=  0.15 ? "BUY"
+                      : finalScore <= -0.5  ? "STRONG_SELL"
+                      : finalScore <= -0.15 ? "SELL"
+                      : "NEUTRAL";
 
     results.push({
       ...sentiment,
-      institutional:  insider,
+      institutional,
       compositeScore: finalScore,
       signal:         finalSignal,
     });
 
-    await sleep(1500);
+    await sleep(1200);
   }
 
   const output = {
     generatedAt: new Date().toISOString(),
     tickerCount: results.length,
-    version:     "5.0",
+    version:     "7.0",
     results,
   };
 
@@ -433,8 +456,11 @@ async function main() {
 
   console.log("\n📊 Summary:");
   results.forEach(r => {
-    const tag = r.type === "etf" ? "[ETF]" : "[STK]";
-    console.log(`  ${tag} ${r.ticker.padEnd(6)} ${r.arrow} ${r.signal.padEnd(12)} score:${r.compositeScore.toFixed(2)}  insider:${r.institutional?.insiderSignal || "n/a"}`);
+    const tag  = r.type === "etf" ? "[ETF]" : "[STK]";
+    const inst = r.institutional?.available
+      ? `inst:${r.institutional.instSentiment} insider:${r.institutional.insiderSignal}`
+      : "inst:inactive";
+    console.log(`  ${tag} ${r.ticker.padEnd(6)} ${r.arrow} ${r.signal.padEnd(12)} score:${r.compositeScore.toFixed(2)}  ${inst}`);
   });
   console.log(`\n✅ Done — ${results.length} tickers processed\n`);
 }
