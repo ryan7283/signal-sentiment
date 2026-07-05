@@ -1,26 +1,26 @@
 {
-  "generatedAt": "2026-07-05T13:48:44.983Z",
+  "generatedAt": "2026-07-05T13:56:33.459Z",
   "tickerCount": 14,
   "version": "5.0",
   "results": [
     {
       "ticker": "PLTR",
       "name": "Palantir Technologies",
-      "sentimentScore": 0.28,
+      "sentimentScore": 0.38,
       "signal": "BUY",
-      "bullCount": 22,
-      "bearCount": 3,
-      "neutralCount": 5,
+      "bullCount": 20,
+      "bearCount": 2,
+      "neutralCount": 8,
       "keyThemes": [
-        "PLTR used as IPO comparison benchmark for SpaceX/SPCX",
-        "10x post-IPO recovery narrative cited repeatedly",
-        "Surveillance state and civil liberties concerns",
-        "Defense/military contract activity and competition",
-        "Alex Karp leadership commentary"
+        "PLTR used as IPO resilience benchmark for $SPCX comparison",
+        "10x+ post-drawdown recovery narrative driving positive framing",
+        "AI sovereignty and enterprise data ownership thesis",
+        "Retail investor enthusiasm and Robinhood popularity",
+        "Caution around chasing momentum and valuation risk"
       ],
-      "topBullish": "SpaceX is pulling a Palantir after its IPO 🚨\n\n$PLTR shot up after going public, then crashed 80%. Everyone wrote it off. Then it soared 10x.\n\nNow $SPCX is doing the same: $150 ➜ $215 ➜ $165\n\nThis is the first real shakeout. Most people will freak out here.\n\nI'm watchi https://t.co/KHrZwWBJug",
-      "topBearish": "maybe if black people [thing] we wouldn't need to establish a surveillance state block websites and put everyone's face into a digital database maintained by palantir huh? how about that? https://t.co/F7kYlZd5Li",
-      "summary": "The overwhelming majority of posts reference Palantir not as a primary investment thesis but as a historical analog for SpaceX's projected IPO trajectory, implicitly validating PLTR's remarkable post-IPO recovery as a widely recognized success story. Direct company-specific sentiment is sparse but skewed modestly positive, with concerns concentrated around surveillance ethics and a noted loss of an Air Traffic Control contract to a Joby Aviation partner.",
+      "topBullish": "Palantir is a good stock gentlemen",
+      "topBearish": "@QualCompounders in 2021, $PLTR $NIO  \n\nlesson that cost me almost 30% of my account\n\nnever chase, it'll merely hurt you when the optimism fades",
+      "summary": "The dominant narrative across this post sample uses Palantir's post-IPO 80% drawdown followed by a 10x recovery as a bullish template, lending $PLTR an aspirational, resilient brand identity even when posts are primarily promoting $SPCX. A small but notable minority of posts inject caution around momentum-chasing and valuation discipline, while substantive company-specific discussion — including AI sovereignty positioning and enterprise data strategy — remains thin but directionally positive.",
       "volumeTrend": "surging",
       "confidence": "low",
       "type": "stock",
@@ -30,8 +30,8 @@
       "sentimentDelta": 0,
       "volumeDelta": 0,
       "arrow": "→",
-      "compositeScore": 0.168,
-      "analyzedAt": "2026-07-05T13:46:31.121Z",
+      "compositeScore": 0.228,
+      "analyzedAt": "2026-07-05T13:54:20.856Z",
       "institutional": {
         "available": false,
         "insiderSignal": "neutral",
@@ -42,37 +42,38 @@
         "instSentiment": "n/a",
         "instNote": "13F data requires Quiver Quant ($25/mo)",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-05T13:46:31.265Z"
+        "lastUpdated": "2026-07-05T13:54:21.532Z"
       }
     },
     {
       "ticker": "AFRM",
-      "name": "Affirm Holdings",
       "sentimentScore": -0.05,
+      "name": "Affirm Holdings",
       "signal": "NEUTRAL",
       "bullCount": 1,
       "bearCount": 2,
       "neutralCount": 27,
       "keyThemes": [
-        "Overwhelming off-topic noise drowning signal",
-        "BNPL criticized as exploiting financial impatience",
-        "Concern over normalization of unaffordable spending",
-        "Minimal actionable stock-specific discussion",
-        "Possible pump signal attempt (post 3)"
+        "Minimal company-specific discussion",
+        "BNPL criticized for enabling poor financial habits",
+        "Possible price movement alert (low credibility)",
+        "Overwhelming noise from unrelated 'affirm' usage",
+        "No earnings or competitive positioning commentary"
       ],
       "topBullish": "$afrm Guys, Don't miss the next move in a few   hours 💸 :- https://t.co/QQVJRkIXxC",
       "topBearish": "@onu_slim BNPL isn't helping broke people. It's teaching people to normalize paying a premium for things they can't yet afford. That's a dangerous financial habit.",
-      "summary": "The overwhelming majority of posts mentioning 'Affirm' or 'BNPL' in this sample are entirely unrelated to Affirm Holdings ($AFRM) as a company — they reference religious affirmations, motivational language, and unrelated social content. Of the few financially relevant posts, sentiment leans slightly negative, with BNPL criticized as exploiting consumer impatience and promoting unhealthy financial habits, while one post appears to be a low-credibility pump signal.",
+      "summary": "The vast majority of the 49 posts analyzed contain no meaningful financial signal for Affirm Holdings, as the ticker keyword 'affirm' predominantly captured unrelated social and motivational content. The only actionable posts include a low-credibility pump alert, a broadly negative BNPL sector sentiment comment, and one implicit BNPL critique, yielding an effectively neutral but slightly negative reading with very low analytical confidence.",
+      "volumeTrend": "silent",
       "confidence": "low",
       "type": "stock",
       "sector": "Fintech / BNPL",
-      "tweetCount": 48,
+      "tweetCount": 49,
       "sentimentTrend": "new",
       "sentimentDelta": 0,
       "volumeDelta": 0,
       "arrow": "→",
       "compositeScore": -0.03,
-      "analyzedAt": "2026-07-05T13:46:41.075Z",
+      "analyzedAt": "2026-07-05T13:54:29.989Z",
       "institutional": {
         "available": false,
         "insiderSignal": "neutral",
@@ -83,27 +84,27 @@
         "instSentiment": "n/a",
         "instNote": "13F data requires Quiver Quant ($25/mo)",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-05T13:46:41.090Z"
+        "lastUpdated": "2026-07-05T13:54:30.519Z"
       }
     },
     {
       "ticker": "IBIT",
       "name": "iShares Bitcoin ETF",
-      "sentimentScore": 0.42,
+      "sentimentScore": 0.38,
       "signal": "BUY",
-      "bullCount": 18,
-      "bearCount": 5,
-      "neutralCount": 7,
+      "bullCount": 20,
+      "bearCount": 6,
+      "neutralCount": 4,
       "keyThemes": [
         "Institutional accumulation and dominant ETF market share",
-        "Bitcoin supply scarcity narrative supporting long-term thesis",
-        "MSTR vs IBIT as competing BTC exposure vehicles",
-        "Tax-advantaged account buying (TFSA, IRA)",
-        "ETF flow momentum with brief outflow concerns"
+        "IBIT vs MSTR as preferred BTC exposure vehicle",
+        "Bitcoin supply scarcity narrative driving long-term thesis",
+        "Bitcoin catching up to gold as macro hedge",
+        "Mixed near-term flow signals with some outflow concern"
       ],
-      "topBullish": "Bitcoin ETF flows positive after 5 days of outflows. BlackRock's IBIT continuing accumulation. Institutional bid ongoing. #IBIT #ETF",
+      "topBullish": "Bitcoin ETFs saw $1.93B in trading volume. $IBIT led the charge with $1.62B. FBTC followed at $227M, while ARKB traded $44.35M. This level of concentrated activity indicates where institutional attention is heavily focused.",
       "topBearish": "Recent monthly flows show outflows from spot Bitcoin ETFs and Ethereum ETFs, while leveraged MicroStrategy ETF demand has also faded. The crypto ETF bid is no longer one-way. $BTC $ETH $MSTR $IBIT $FBTC #Crypto #Bitcoin",
-      "summary": "Social sentiment around IBIT is broadly constructive, with institutional accumulation narratives, dominant trading volume ($1.62B of $1.93B total Bitcoin ETF volume), and Bitcoin supply scarcity themes driving bullish conviction. Bearish sentiment is limited but noteworthy, citing recent ETF outflow trends and short-term price weakness, suggesting the one-directional institutional bid may be moderating.",
+      "summary": "IBIT dominates Bitcoin ETF trading volume with $1.62B of the $1.93B sector total, cementing its position as the institutional vehicle of choice for BTC exposure over alternatives like MSTR. While the long-term bull thesis around fixed BTC supply and Bitcoin-gold convergence remains intact, near-term sentiment is tempered by recent outflow trends and some bearish options positioning, yielding a moderately bullish overall signal.",
       "volumeTrend": "surging",
       "confidence": "medium",
       "type": "etf",
@@ -113,8 +114,8 @@
       "sentimentDelta": 0,
       "volumeDelta": 0,
       "arrow": "→",
-      "compositeScore": 0.252,
-      "analyzedAt": "2026-07-05T13:46:50.646Z",
+      "compositeScore": 0.228,
+      "analyzedAt": "2026-07-05T13:54:41.039Z",
       "institutional": {
         "available": false,
         "insiderSignal": "neutral",
@@ -130,21 +131,21 @@
     {
       "ticker": "AMZN",
       "name": "Amazon",
-      "sentimentScore": 0.12,
+      "sentimentScore": 0.21,
       "signal": "NEUTRAL",
-      "bullCount": 7,
+      "bullCount": 8,
       "bearCount": 2,
-      "neutralCount": 21,
+      "neutralCount": 20,
       "keyThemes": [
-        "Long-term portfolio holding among mega-cap tech",
-        "AWS/AI infrastructure capex tailwinds",
-        "Amazon Prime Video content momentum",
-        "Kuiper satellite competitive positioning vs Starlink",
-        "Options activity and technical uncertainty"
+        "Amazon Prime ecosystem strength",
+        "Long-term outperformance vs S&P 500",
+        "AI and cloud competitive positioning",
+        "Smart home and voice assistant competition",
+        "Institutional and retail investor confidence"
       ],
-      "topBullish": "Hyperscaler capex is expected to reach $757B in 2026 and $920B in 2027 💰🤖\n\nThat's:\n📈 +84% YoY in 2026\n📈 +22% YoY in 2027\n\nThe AI infrastructure buildout isn't slowing down. \n$MSFT $GOOGL $META $AMZN $ORCL",
+      "topBullish": "@ben__investing @investwithjohn9 Over the last 20 years (to ~Jul 2026):\n\n$AMZN: ~27.6% CAGR total return \n$VOO (S&P 500): ~11.3% CAGR total return \n\nAMZN massively outperformed long-term but with far higher volatility & drawdowns. Last 5Y, VOO led as your chart shows (+71% vs +30.5%).\n\n$10k in AMZN → ~$1.35M",
       "topBearish": "@ContraryTrader I don't trust $AMZN . This crap is bipolar. Nobody knows where it's going 😭😭",
-      "summary": "Social media sentiment around AMZN is broadly neutral, dominated by spam ticker-tagging posts and unrelated Amazon Prime subscription listings rather than substantive investment thesis discussion. Actionable signals are sparse but modestly positive, with bullish references to AI infrastructure capex tailwinds and long-term mega-cap conviction offset by technical uncertainty and competitive pressure from Starlink in the satellite space.",
+      "summary": "Sentiment around AMZN is modestly bullish, anchored by notable long-term CAGR outperformance data (~27.6% over 20 years) and consistent inclusion in diversified tech portfolios alongside MSFT, NVDA, and GOOGL. The majority of posts are low-signal noise (spam, Prime Video mentions, ticker stuffing), with only one clearly bearish voice citing short-term unpredictability, limiting conviction on near-term directional momentum.",
       "volumeTrend": "stable",
       "confidence": "low",
       "type": "stock",
@@ -154,8 +155,8 @@
       "sentimentDelta": 0,
       "volumeDelta": 0,
       "arrow": "→",
-      "compositeScore": 0.072,
-      "analyzedAt": "2026-07-05T13:47:01.121Z",
+      "compositeScore": 0.126,
+      "analyzedAt": "2026-07-05T13:54:49.999Z",
       "institutional": {
         "available": false,
         "insiderSignal": "neutral",
@@ -166,7 +167,7 @@
         "instSentiment": "n/a",
         "instNote": "13F data requires Quiver Quant ($25/mo)",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-05T13:47:01.164Z"
+        "lastUpdated": "2026-07-05T13:54:50.620Z"
       }
     },
     {
@@ -179,14 +180,14 @@
       "neutralCount": 6,
       "keyThemes": [
         "Sharp price decline from $7.37 highs to ~$4.60 seen as dip-buying opportunity",
-        "AI infrastructure / neocloud sector repositioning narrative",
-        "Margin call / forced selling cited as temporary technical pressure",
-        "Spam WhatsApp group recruitment raising manipulation concerns",
-        "Thin institutional ownership and recurring revenue as structural bear case"
+        "AI infrastructure / data center / neocloud sector positioning",
+        "Margin call-driven panic selling viewed as temporary, not fundamental",
+        "Spam WhatsApp group recruitment suggesting low-quality retail crowd",
+        "Bearish concerns: thin recurring revenue, no institutional holders, hype-driven price action"
       ],
-      "topBullish": "$KEEL 🔥🔥🔥🔥🚀🚀🚀🚀🚀🚀🚀🚀\nThe market is still valuing KEEL as yesterday's company, while the business is rapidly transforming into AI infrastructure. Russell inclusion, a deep power asset portfolio, improving liquidity, and potential AI leasing catalysts create a very...",
-      "topBearish": "$KEEL suffers core small-cap infrastructure headwinds: slow project award cadence, thin recurring revenue, and heavy field operation costs that eat into margins. With almost no institutional long-term holders, every price surge only lasts as long as retail social media hype. Once...",
-      "summary": "Social media sentiment around $KEEL is marginally net bullish, dominated by retail dip-buyers framing the ~38% drawdown from highs as a forced-selling event rather than a fundamental deterioration, with speculative AI infrastructure re-rating narratives providing upside thesis support. However, signal quality is significantly degraded by multiple coordinated WhatsApp pump-group recruitment posts, a near-total absence of institutional commentary, and at least one substantive bear post highlighting structurally thin recurring revenue and margin headwinds that challenge the AI infrastructure valuation story.",
+      "topBullish": "$KEEL 🔥🔥🔥🔥🚀🚀🚀🚀🚀🚀🚀🚀\nThe market is still valuing KEEL as yesterday's company, while the business is rapidly transforming into AI infrastructure. Russell inclusion, a deep power asset portfolio, improving liquidity, and potential AI leasing catalysts create a very",
+      "topBearish": "$KEEL suffers core small-cap infrastructure headwinds: slow project award cadence, thin recurring revenue, and heavy field operation costs that eat into margins. With almost no institutional long-term holders, every price surge only lasts as long as retail social media hype. Once",
+      "summary": "Social media sentiment around $KEEL is cautiously bullish on a net basis, with the majority of posts framing the ~38% drawdown from highs as a margin-call-driven dip in a broader neocloud/AI infrastructure sector selloff rather than a fundamental deterioration. However, signal quality is materially degraded by numerous spam WhatsApp recruitment posts and the absence of any Supply Chain AI or SaaS-specific discussion, suggesting the ticker may be misidentified or the company narrative has pivoted — and that retail hype, not fundamentals, is driving the conversation.",
       "volumeTrend": "surging",
       "confidence": "low",
       "type": "stock",
@@ -197,7 +198,7 @@
       "volumeDelta": 0,
       "arrow": "→",
       "compositeScore": 0.126,
-      "analyzedAt": "2026-07-05T13:47:12.339Z",
+      "analyzedAt": "2026-07-05T13:55:01.748Z",
       "institutional": {
         "available": false,
         "insiderSignal": "neutral",
@@ -208,27 +209,27 @@
         "instSentiment": "n/a",
         "instNote": "13F data requires Quiver Quant ($25/mo)",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-05T13:47:13.380Z"
+        "lastUpdated": "2026-07-05T13:55:02.807Z"
       }
     },
     {
       "ticker": "APLD",
       "name": "Applied Digital",
-      "sentimentScore": 0.72,
+      "sentimentScore": 0.68,
       "signal": "BUY",
       "bullCount": 38,
       "bearCount": 1,
       "neutralCount": 10,
       "keyThemes": [
-        "Neocloud sector dip buying opportunity",
+        "Neocloud sector buying opportunity on dip",
         "AI infrastructure growth narrative",
-        "Price target upgrades and speculative upside",
-        "Sector rotation into HPC/data center plays",
-        "Potential META acquisition speculation"
+        "Price targets well above current trading levels",
+        "Speculative acquisition rumors (META tenant)",
+        "Sector rotation into AI/HPC infrastructure plays"
       ],
       "topBullish": "Hear me out: buy before July 15, and by year-end you could potentially see massive gains.\n\n$CRWV is a $180.00 stock trading at $81\n\n$NBIS is a $398.00 stock trading at $215\n\n$IREN is a $98.00 stock trading at $38\n\n$APLD is a $58.00 stock trading at $33\n\n$SOUN is a $24.00 stock",
       "topBearish": "$APLD was rejected at the horizontal resistance but managed to close directly on top of the Gann Arc, placing price at a critical decision point. \n\nAs long as this arc continues to act as support, buyers still have an opportunity to stabilize the trend and build for another",
-      "summary": "Social media sentiment around $APLD is overwhelmingly bullish, with the stock frequently cited alongside top-tier neocloud and AI infrastructure peers as a discounted buy following a broad sector selloff from highs near $50. Multiple posts flag aggressive price targets ranging from $58 to $82, with speculative catalysts including a potential META acquisition and strong AI infrastructure capex tailwinds reinforcing the bull case.",
+      "summary": "Social media sentiment around $APLD is strongly bullish, with the stock repeatedly appearing on buy lists targeting a move from ~$33 to price targets ranging from $58 to $82, framed as a discounted AI infrastructure/neocloud opportunity. The dominant narrative centers on the post-selloff dip as a long-term accumulation opportunity, bolstered by speculative rumors of a major tenant acquisition (META), though much of the volume reflects list-based promotional posts rather than deep fundamental analysis.",
       "volumeTrend": "increasing",
       "confidence": "medium",
       "type": "stock",
@@ -238,8 +239,8 @@
       "sentimentDelta": 0,
       "volumeDelta": 0,
       "arrow": "→",
-      "compositeScore": 0.432,
-      "analyzedAt": "2026-07-05T13:47:23.953Z",
+      "compositeScore": 0.408,
+      "analyzedAt": "2026-07-05T13:55:14.498Z",
       "institutional": {
         "available": false,
         "insiderSignal": "neutral",
@@ -250,38 +251,38 @@
         "instSentiment": "n/a",
         "instNote": "13F data requires Quiver Quant ($25/mo)",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-05T13:47:24.079Z"
+        "lastUpdated": "2026-07-05T13:55:15.066Z"
       }
     },
     {
       "ticker": "IREN",
       "name": "Iris Energy",
-      "sentimentScore": 0.52,
+      "sentimentScore": 0.68,
       "signal": "BUY",
-      "bullCount": 20,
+      "bullCount": 38,
       "bearCount": 4,
-      "neutralCount": 6,
+      "neutralCount": 7,
       "keyThemes": [
-        "Anthropic data center deal speculation (Australia, 1.4GW)",
-        "AI infrastructure / HPC transition from Bitcoin mining",
-        "Significant pullback from highs (~$70 to ~$38) seen as buying opportunity",
-        "Nvidia GW-scale AI factory tailwind for power/data center demand",
-        "Competitive concerns vs. NBIS, CRWV"
+        "Anthropic data center deal speculation (Australia)",
+        "AI infrastructure capacity expansion (BC, Texas, SA)",
+        "Long-term holder optimism despite price decline",
+        "Nvidia AI factory demand tailwind",
+        "Competitive positioning vs Bitcoin mining peers"
       ],
-      "topBullish": "$IREN\n x Anthropic \n \nLeaked docs point to Anthropic eyeing 1.4GW of Australian data center capacity, potentially $21.6B across 4-5 contracts. \n \nNothing signed yet, no deal confirmed.   \nBut if this gets split up, \n$IREN\n could be in the mix for a piece of it.",
-      "topBearish": "@Investinc_Intel $NBIS has the better balance sheet. $CRWV is in a good dip with a huge market cap and a much lower price in relation to nebius. $IREN has some serious competition so id lean towards $CRWV at current levels.",
-      "summary": "Social media sentiment around $IREN is predominantly bullish, driven heavily by speculation that Iris Energy could secure a slice of Anthropic's reported 1.4GW Australian data center expansion, which bulls view as a potential major catalyst for a stock already trading ~46% below its recent highs. Bears and skeptics are few but notable, flagging intense competition from better-capitalized peers like NBIS and CRWV, and one post dismissing the company's marketing focus, while the unconfirmed nature of the Anthropic deal introduces meaningful execution risk.",
+      "topBullish": "$IREN will profit most, upcoming GW capacity are huge for future contracts! 👍",
+      "topBearish": "Serenity has low in depth $IREN analyst. Today is just another lazy connection. It's highly unlikely that $IREN announces anything in Australia soon because the SA Site is not ready (energized) until 2028. The only sites guided for 2027 1210MW capacity are in BC and Texas.",
+      "summary": "Social media sentiment around $IREN is strongly bullish, dominated by speculation that Iris Energy could secure a high-profile contract with Anthropic tied to a large-scale Australian data center buildout, alongside enthusiasm about its multi-gigawatt capacity pipeline in BC and Texas as a structural AI infrastructure beneficiary. A notable counterpoint flags that the South Australia site is not energized until 2028, tempering near-term Anthropic deal expectations, while some holders acknowledge recent price weakness and eagerness for a positive catalyst.",
       "volumeTrend": "surging",
       "confidence": "medium",
       "type": "stock",
       "sector": "AI Infrastructure / HPC / Bitcoin Mining",
-      "tweetCount": 50,
+      "tweetCount": 49,
       "sentimentTrend": "new",
       "sentimentDelta": 0,
       "volumeDelta": 0,
       "arrow": "→",
-      "compositeScore": 0.312,
-      "analyzedAt": "2026-07-05T13:47:36.806Z",
+      "compositeScore": 0.408,
+      "analyzedAt": "2026-07-05T13:55:25.834Z",
       "institutional": {
         "available": false,
         "insiderSignal": "neutral",
@@ -292,26 +293,27 @@
         "instSentiment": "n/a",
         "instNote": "13F data requires Quiver Quant ($25/mo)",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-05T13:47:36.824Z"
+        "lastUpdated": "2026-07-05T13:55:26.362Z"
       }
     },
     {
       "ticker": "FOTO",
       "name": "FOTO ETF",
-      "sentimentScore": -0.1,
+      "sentimentScore": 0.05,
       "signal": "NEUTRAL",
       "bullCount": 1,
       "bearCount": 1,
       "neutralCount": 4,
       "keyThemes": [
-        "Travel and vacation lifestyle",
-        "Summer seasonal content",
-        "Unrelated spam and noise",
-        "Low investment-grade signal"
+        "travel lifestyle hashtags",
+        "summer/vacation imagery",
+        "unrelated promotional spam",
+        "no ETF-specific fund flow discussion",
+        "low-quality social signal"
       ],
       "topBullish": "⛱📷 Informes:𝟗𝟗𝟗 𝟐𝟒𝟔 𝟐𝟎𝟕𝟐  #Viajar #Foto #Feliz #Verano #Instalike #selfie #music #sonrie #Estilo #felizSabado https://t.co/fILm5q2up7",
       "topBearish": "if u need gooning butttt picssss #teenagegirls #teenagee #omegle #viralvídeo #fyp #viral #foto #parati #digitalart  #viralvídeo #Trending #tiktok https://t.co/EFQdAJMb4r",
-      "summary": "Social media chatter around $FOTO is almost entirely composed of spam, lifestyle hashtag posts, and off-topic content with negligible investment-relevant signal. The posts reflect incidental use of the #foto hashtag rather than any meaningful fund flow interest, sector momentum, or macro thesis discussion, rendering sentiment data unreliable for trading decisions.",
+      "summary": "Social media posts tagged with $FOTO or #foto contain virtually zero actionable ETF investment sentiment, consisting primarily of repetitive Spanish-language travel promotional spam, unrelated adult content, and lifestyle posts with no reference to fund flows, sector performance, or macro themes. The signal-to-noise ratio is critically low, making any sentiment inference unreliable and rendering this dataset insufficient for meaningful fund flow or sector momentum analysis.",
       "volumeTrend": "stable",
       "confidence": "low",
       "type": "etf",
@@ -321,8 +323,8 @@
       "sentimentDelta": 0,
       "volumeDelta": 0,
       "arrow": "→",
-      "compositeScore": -0.06,
-      "analyzedAt": "2026-07-05T13:47:44.894Z",
+      "compositeScore": 0.03,
+      "analyzedAt": "2026-07-05T13:55:35.086Z",
       "institutional": {
         "available": false,
         "insiderSignal": "neutral",
@@ -345,14 +347,14 @@
       "neutralCount": 1,
       "keyThemes": [
         "Strong NAV performance (+69.33% since inception)",
-        "High-conviction commercial space holdings (RKLB, SpaceX SPV, ASTS)",
-        "Actively managed differentiation vs direct stock picking",
-        "Broadening retail awareness and ETF discovery",
-        "Space-based broadband and satellite economy momentum"
+        "Commercial space economy momentum",
+        "High-conviction holdings in RKLB, ASTS, LUNR",
+        "SpaceX private exposure via SPV",
+        "Active management in high-growth sector"
       ],
       "topBullish": "The Tema Space Innovators ETF, $NASA, is an actively managed ETF focused on the commercial space economy.\n\nTop holdings:\n$RKLB 11.89%\nSpaceX SPV (Preferred) 8.30%\n$PL 6.91%\n$FLY 6.39%\n$LUNR 6.31%\n$ASTS 5.99%\n\nExpense Ratio: 0.75%\nLife NAV Return (since 3/30/26): +69.33% https://t.co/Xb9IDVNo9F",
       "topBearish": null,
-      "summary": "Social media sentiment around $NASA is decisively bullish, anchored by a standout life NAV return of +69.33% and a diversified portfolio of high-momentum commercial space names including RKLB, a SpaceX SPV, and ASTS. Retail discovery appears to be accelerating, with posts highlighting the ETF as a preferred vehicle for broad space exposure versus single-stock risk, suggesting potential for continued fund inflows.",
+      "summary": "Social sentiment around $NASA is notably bullish, anchored by a standout +69.33% lifetime NAV return and a diversified portfolio of high-momentum commercial space names including Rocket Lab, SpaceX (via preferred SPV), and AST SpaceMobile. The ETF is gaining visibility as a preferred vehicle for investors seeking broad exposure to the commercial space economy without single-stock concentration risk, with no bearish signals present in current discourse.",
       "volumeTrend": "increasing",
       "confidence": "medium",
       "type": "etf",
@@ -363,7 +365,7 @@
       "volumeDelta": 0,
       "arrow": "→",
       "compositeScore": 0.468,
-      "analyzedAt": "2026-07-05T13:47:54.129Z",
+      "analyzedAt": "2026-07-05T13:55:44.975Z",
       "institutional": {
         "available": false,
         "insiderSignal": "neutral",
@@ -385,15 +387,15 @@
       "bearCount": 0,
       "neutralCount": 0,
       "keyThemes": [
-        "Long-term satellite portfolio allocation",
-        "ETF diversification over individual stocks",
+        "Long-term ETF portfolio construction",
         "AI and tech sector conviction",
-        "Risk-managed floor/ceiling tradeoff",
-        "Pairing with semiconductor and cybersecurity ETFs"
+        "Diversification over single-stock risk",
+        "Satellite portfolio strategy",
+        "Thematic ETF bundling with SMH and CIBR"
       ],
       "topBullish": "@ZaStocks I think you are totally correct @ZaStocks . I am a very happy subscriber,You were way ahead of this in your substack . I am building a satellite Portfolio of 3 ETFS to hold very long term. $SMH $AIPO and $CIBR  . Holding individual stocks have a higher ceiling but a lower floor.",
       "topBearish": null,
-      "summary": "The lone post reflects deliberate, long-term bullish conviction in AIPO as part of a curated three-ETF satellite portfolio alongside $SMH and $CIBR, signaling thematic confidence in AI-driven IPO exposure. The investor explicitly favors ETF structures for downside protection, suggesting a risk-aware but optimistic stance on the AI/IPO macro theme.",
+      "summary": "The single post sampled reflects a bullish, long-term conviction buy on AIPO as part of a curated thematic ETF trio alongside SMH and CIBR, suggesting investors are gravitating toward managed AI/IPO exposure to reduce downside risk relative to individual stock picking. Sentiment is constructively positive, anchored by a risk-management rationale and influencer validation, though the very limited sample size constrains confidence in broader trend extrapolation.",
       "volumeTrend": "silent",
       "confidence": "low",
       "type": "etf",
@@ -404,7 +406,7 @@
       "volumeDelta": 0,
       "arrow": "→",
       "compositeScore": 0.432,
-      "analyzedAt": "2026-07-05T13:48:02.071Z",
+      "analyzedAt": "2026-07-05T13:55:53.314Z",
       "institutional": {
         "available": false,
         "insiderSignal": "neutral",
@@ -420,21 +422,21 @@
     {
       "ticker": "TSLA",
       "name": "Tesla",
-      "sentimentScore": 0.21,
+      "sentimentScore": 0.05,
       "signal": "NEUTRAL",
       "bullCount": 10,
-      "bearCount": 3,
-      "neutralCount": 17,
+      "bearCount": 7,
+      "neutralCount": 13,
       "keyThemes": [
-        "FSD EU regulatory approval push",
-        "Q2 delivery beat / buy-the-rumor sell-the-news",
-        "Rising gas prices boosting EV demand",
-        "FSD real-world demo enthusiasm",
-        "Long-term tech growth holding"
+        "FSD regulatory approval in EU",
+        "Technical breakdown below key moving averages",
+        "Japan market expansion",
+        "Buy-the-rumor sell-the-news delivery reaction",
+        "Elon Musk reputational controversy"
       ],
-      "topBullish": "@JCChristopher Yup. Gave 2 Cybertruck FSD demos this weekend. 💪. Both people who had never driven a Tesla before. Both completely comfortable just getting in and pushing \"start driving\" after telling Grok where to go. Minds blown. We are so early. $Tsla",
-      "topBearish": "$TSLA Despite beating delivery number expectations, the stock is down breaking below the 400 whole number. This is likely a case of \"buy the rumor, sell the news.\" This week I will be looking for a continuation move down if this stays below 400. Short idea below 390",
-      "summary": "Sentiment around TSLA is mildly positive but fragmented, with meaningful signal concentrated in FSD regulatory advocacy toward the EU and organic consumer enthusiasm for Cybertruck FSD demos, offset by a notable bearish short thesis following a delivery beat that failed to hold the $400 level. Rising gas prices provide a macro tailwind evidenced by 25% YoY delivery growth, though the near-term technical picture remains cautious with traders eyeing a continuation move below $390.",
+      "topBullish": "Best idea 💡\n\nThe EU should stop pretending basic driver monitoring and lane-assist systems are the future of road safety\n\nMake it easier for manufacturers to adopt Tesla FSD instead of pushing box-checking around weaker driver-assist systems with unknown real-world effectiveness",
+      "topBearish": "$TSLA Despite beating delivery number expectations, the stock is down breaking below the 400 whole number. This is likely a case of \"buy the rumor, sell the news.\" This week I will be looking for a continuation move down if this stays below 400.\n\nShort idea below 390",
+      "summary": "Sentiment on TSLA is broadly neutral with modest bullish undercurrents centered on FSD adoption momentum in Europe and potential Japan market entry, offset by near-term bearish price action as the stock trades below key moving averages ($399 20-day, $406 50-day) following a classic buy-the-rumor sell-the-news delivery beat. Reputational noise around Elon Musk and a predominance of spam/off-topic posts dilute signal quality, keeping conviction low despite the marginally positive fundamental storyline.",
       "volumeTrend": "stable",
       "confidence": "low",
       "type": "stock",
@@ -444,8 +446,8 @@
       "sentimentDelta": 0,
       "volumeDelta": 0,
       "arrow": "→",
-      "compositeScore": 0.126,
-      "analyzedAt": "2026-07-05T13:48:13.075Z",
+      "compositeScore": 0.03,
+      "analyzedAt": "2026-07-05T13:56:02.250Z",
       "institutional": {
         "available": false,
         "insiderSignal": "neutral",
@@ -456,27 +458,27 @@
         "instSentiment": "n/a",
         "instNote": "13F data requires Quiver Quant ($25/mo)",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-05T13:48:13.098Z"
+        "lastUpdated": "2026-07-05T13:56:02.799Z"
       }
     },
     {
       "ticker": "CIBR",
       "name": "First Trust Cybersecurity ETF",
-      "sentimentScore": 0.68,
+      "sentimentScore": 0.72,
       "signal": "BUY",
-      "bullCount": 2,
+      "bullCount": 3,
       "bearCount": 0,
       "neutralCount": 1,
       "keyThemes": [
-        "Long-term satellite portfolio inclusion",
+        "Long-term satellite portfolio allocation",
         "Rising momentum score (+9 week-over-week)",
-        "Sector isolation as standalone allocation",
-        "ETF preferred over individual stock risk",
-        "Cybersecurity sector rotation interest"
+        "Cybersecurity treated as standalone sector",
+        "ETF preferred over individual stocks for risk management",
+        "Sector rotation and EOQ/H2 tailwinds"
       ],
-      "topBullish": "Top 10 key equity assets ETFs by Bastion Momentum Score:\n\n💾 Semiconductors 92 (-2) $SMH \n🇹🇼 Taiwan 89 $EWT \n✈️ Global Jets 88 $JETS \n🏦 Banks 86 $KBWB \n🇮🇹 Italy 86 $EWI \n🔒 Cybersecurity 83 (+9) $CIBR \n💊 Pharmaceuticals 83 $PJP \n🤖 AI & Software 81 (-8) $IGPT \n🏥 Healthcare",
+      "topBullish": "Top 10 key equity assets ETFs by Bastion Momentum Score:\n\n💾 Semiconductors 92 (-2) $SMH \n🇹🇼 Taiwan 89 $EWT \n✈️ Global Jets 88 $JETS \n🏦 Banks 86 $KBWB \n🇮🇹 Italy 86 $EWI \n🔒 Cybersecurity 83 (+9) $CIBR \n💊 Pharmaceuticals 83 $PJP \n🤖 AI & Software 81 (-8) $IGPT \n🏥 Healthcare https://t.co/pRijd3uNRr",
       "topBearish": null,
-      "summary": "Sentiment around CIBR is notably constructive, supported by a significant +9 point surge in momentum scoring to 83 and deliberate inclusion in long-term satellite ETF portfolios alongside high-conviction names like SMH. The fund is being treated as a distinct sector allocation rather than a proxy for broader software, signaling growing recognition of cybersecurity as a standalone macro theme with favorable risk-adjusted appeal over individual stock exposure.",
+      "summary": "Sentiment surrounding CIBR is notably bullish across all three posts, highlighted by a strong +9 point surge in its Bastion Momentum Score to 83, placing it firmly in the top-tier ETF rankings. Investors are increasingly treating cybersecurity as a distinct, high-conviction sector with long-term holding appeal, with at least one participant explicitly adding CIBR to a core satellite portfolio alongside semiconductors and AI-adjacent ETFs.",
       "volumeTrend": "increasing",
       "confidence": "medium",
       "type": "etf",
@@ -486,8 +488,8 @@
       "sentimentDelta": 0,
       "volumeDelta": 0,
       "arrow": "→",
-      "compositeScore": 0.408,
-      "analyzedAt": "2026-07-05T13:48:25.914Z",
+      "compositeScore": 0.432,
+      "analyzedAt": "2026-07-05T13:56:12.181Z",
       "institutional": {
         "available": false,
         "insiderSignal": "neutral",
@@ -503,32 +505,32 @@
     {
       "ticker": "VST",
       "name": "Vistra Corp",
-      "sentimentScore": 0.78,
+      "sentimentScore": 0.72,
       "signal": "BUY",
-      "bullCount": 22,
+      "bullCount": 20,
       "bearCount": 0,
-      "neutralCount": 8,
+      "neutralCount": 10,
       "keyThemes": [
-        "AI data center power demand driver",
-        "Long-term millionaire-maker stock lists",
-        "Diversified power generation (nuclear, gas, solar, battery)",
-        "Microsoft/Amazon PPA partnerships",
-        "Energy infrastructure supercycle play"
+        "AI data center power demand beneficiary",
+        "Nuclear + diversified energy portfolio",
+        "Analyst Buy ratings (Wells Fargo)",
+        "Included in high-conviction growth stock lists",
+        "Power Purchase Agreements with hyperscalers (Amazon, Microsoft)"
       ],
       "topBullish": "⚡ AI Data Center Power Supercycle — 9 টি US Power Stock একনজরে!\n\n🔋 Vistra Corp (VST) — Natural Gas + Nuclear + Solar + Battery মিলিয়ে diversified power giant। Texas আর PJM region এ strong presence। Amazon আর Microsoft এর সঙ্গে direct Power Purchase Agreement আছে। Energy Harbor",
       "topBearish": null,
-      "summary": "Vistra Corp ($VST) commands overwhelmingly bullish sentiment across social media, consistently appearing in AI infrastructure power plays, long-term wealth-building stock lists, and energy supercycle theses alongside peers like $CEG and $NVDA. A Wells Fargo Buy rating, highlighted Power Purchase Agreements with Amazon and Microsoft, and a diversified generation portfolio (nuclear, natural gas, solar, battery) reinforce the investment narrative, with multiple posts projecting price targets as high as $180 from recent levels near $151.",
+      "summary": "Vistra Corp ($VST) is generating overwhelmingly bullish social media sentiment, consistently featured across multiple high-conviction stock lists as a primary beneficiary of the AI-driven power demand supercycle, with direct Power Purchase Agreements with hyperscalers and a diversified generation portfolio. A Wells Fargo Buy rating and repeated inclusion in 'millionaire-maker' and long-term growth watchlists reinforce strong institutional and retail confidence, with price targets cited as high as $180, representing significant upside from current levels near $151.",
       "volumeTrend": "increasing",
       "confidence": "medium",
       "type": "stock",
       "sector": "Power / Energy / AI Infrastructure",
-      "tweetCount": 44,
+      "tweetCount": 46,
       "sentimentTrend": "new",
       "sentimentDelta": 0,
       "volumeDelta": 0,
       "arrow": "→",
-      "compositeScore": 0.468,
-      "analyzedAt": "2026-07-05T13:48:35.138Z",
+      "compositeScore": 0.432,
+      "analyzedAt": "2026-07-05T13:56:21.626Z",
       "institutional": {
         "available": false,
         "insiderSignal": "neutral",
@@ -539,7 +541,7 @@
         "instSentiment": "n/a",
         "instNote": "13F data requires Quiver Quant ($25/mo)",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-05T13:48:35.158Z"
+        "lastUpdated": "2026-07-05T13:56:22.157Z"
       }
     },
     {
@@ -551,17 +553,17 @@
       "bearCount": 0,
       "neutralCount": 3,
       "keyThemes": [
-        "TopBuild (BLD) acquisition approved with ~99% shareholder vote",
+        "TopBuild acquisition approval (~99% shareholder vote)",
         "Building products distribution platform expansion",
         "New retail investor position initiations",
-        "Swing trade and active trader interest",
-        "Promotional/spam community recruitment activity"
+        "Swing/active trading interest",
+        "Promotional/community-building activity"
       ],
       "topBullish": "$QXO shareholders have overwhelmingly approved the acquisition of $BLD TopBuild, with approximately 99% of votes cast in favour.\n\nThe deal creates one of the largest building products distribution platforms in North America. https://t.co/i86mGnmBF5",
       "topBearish": null,
-      "summary": "Sentiment around QXO is cautiously positive, anchored by the landmark near-unanimous shareholder approval of the TopBuild acquisition, which positions QXO as a major North American building products distribution consolidator. Retail investor interest is rising with new position initiations appearing, though the signal quality is diluted by spam-like WhatsApp group recruitment posts and limited substantive fundamental discussion.",
+      "summary": "Sentiment around QXO Inc is cautiously bullish, anchored by the landmark near-unanimous shareholder approval of the TopBuild acquisition, which positions the company as one of North America's largest building products distributors and validates the M&A rollup thesis. Retail interest is growing with new position initiations appearing in diversified Roth portfolios, though a notable portion of social activity consists of promotional trading-group spam and vague references, limiting signal quality.",
       "volumeTrend": "increasing",
-      "confidence": "low",
+      "confidence": "medium",
       "type": "stock",
       "sector": "Building Products Distribution / M&A Rollup",
       "tweetCount": 6,
@@ -570,7 +572,7 @@
       "volumeDelta": 0,
       "arrow": "→",
       "compositeScore": 0.312,
-      "analyzedAt": "2026-07-05T13:48:43.467Z",
+      "analyzedAt": "2026-07-05T13:56:31.398Z",
       "institutional": {
         "available": false,
         "insiderSignal": "neutral",
@@ -581,7 +583,7 @@
         "instSentiment": "n/a",
         "instNote": "13F data requires Quiver Quant ($25/mo)",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-05T13:48:43.483Z"
+        "lastUpdated": "2026-07-05T13:56:31.959Z"
       }
     }
   ]
