@@ -242,29 +242,25 @@ async function fetchInstitutionalData(ticker, type) {
     );
     if (res.ok) {
       const data   = await res.json();
-      // DEBUG: print first record to see actual field names
-      if (data && data.length > 0) {
-        console.log(`  [${ticker}] Insiders sample record:`, JSON.stringify(data[0]));
-      }
+
       const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 180);
       const recent = (data || []).filter(t => new Date(t.Date) > cutoff);
-      // Try multiple possible field name variations
+      // Confirmed field names from Quiver API:
+      // TransactionCode: "P" = open-market purchase, "S" = open-market sale
+      // AcquiredDisposedCode: "A" = acquired, "D" = disposed
+      // We use TransactionCode as primary since it distinguishes open-market trades
       const buys   = recent.filter(t =>
-        t.AcquiredDisposed === "A" ||
-        t.acquired_disposed === "A" ||
-        t.transaction_type === "P" ||
-        (t.TransactionType || "").toLowerCase() === "buy"
+        t.TransactionCode === "P" ||
+        t.AcquiredDisposedCode === "A"
       );
       const sells  = recent.filter(t =>
-        t.AcquiredDisposed === "D" ||
-        t.acquired_disposed === "D" ||
-        t.transaction_type === "S" ||
-        (t.TransactionType || "").toLowerCase() === "sell"
+        t.TransactionCode === "S" ||
+        t.AcquiredDisposedCode === "D"
       );
       console.log(`  [${ticker}] Insiders: ${data.length} total, ${recent.length} recent — ${buys.length} buys, ${sells.length} sells`);
       if (buys.length > sells.length && buys.length > 0) {
         insiderSignal = "bullish";
-        const topBuyer = recent.find(t => t.AcquiredDisposed === "A")?.Name || "";
+        const topBuyer = recent.find(t => t.TransactionCode === "P")?.Name || "";
         insiderNote = `${buys.length} open-market purchase(s) vs ${sells.length} sale(s) — last 180 days${topBuyer ? ` · Latest: ${topBuyer}` : ""}`;
       } else if (sells.length > buys.length && sells.length > 0) {
         insiderSignal = "bearish";
@@ -302,59 +298,33 @@ async function fetchInstitutionalData(ticker, type) {
         const latestQ   = data.filter(d => d.ReportPeriod === latestPeriod);
         const previousQ = data.filter(d => d.ReportPeriod === previousPeriod);
 
-        // DEBUG: print first record to see actual field names
-        if (data.length > 0) console.log(`  [${ticker}] HedgeFunds sample:`, JSON.stringify(data[0]));
         console.log(`  [${ticker}] HedgeFunds: ${data.length} records, latest Q: ${latestPeriod}, prev Q: ${previousPeriod || "none"}, ${latestQ.length} funds latest`);
 
-        if (previousQ.length > 0) {
-          // Compare share counts between quarters per fund
-          const prevMap = {};
-          previousQ.forEach(d => { prevMap[d.Owner] = parseFloat(d.Shares) || 0; });
+        // Confirmed fields from Quiver API:
+        // Fund = fund name, Change_Share = share count change vs prior quarter
+        // Change_Share > 0 means buying, < 0 means selling, Quiver pre-computes this
+        const buyers  = latestQ.filter(d => (parseFloat(d.Change_Share) || 0) > 0);
+        const sellers = latestQ.filter(d => (parseFloat(d.Change_Share) || 0) < 0);
 
-          let buyCount = 0, sellCount = 0, newPositions = 0;
-          const topBuyers = [];
+        hedgeFundBuys  = buyers.length;
+        hedgeFundSells = sellers.length;
 
-          latestQ.forEach(d => {
-            const owner       = d.Owner;
-            const currShares  = parseFloat(d.Shares) || 0;
-            const prevShares  = prevMap[owner] || 0;
+        // Top buyer = fund with largest positive Change_Share
+        const topBuyerFund = buyers.sort((a, b) =>
+          (parseFloat(b.Change_Share) || 0) - (parseFloat(a.Change_Share) || 0)
+        )[0];
+        topHedgeFund = topBuyerFund?.Fund || latestQ[0]?.Fund || null;
 
-            if (prevShares === 0 && currShares > 0) {
-              newPositions++;
-              buyCount++;
-              topBuyers.push({ owner, change: currShares });
-            } else if (currShares > prevShares * 1.02) { // >2% increase
-              buyCount++;
-              topBuyers.push({ owner, change: currShares - prevShares });
-            } else if (currShares < prevShares * 0.98) { // >2% decrease
-              sellCount++;
-            }
-          });
+        console.log(`  [${ticker}] HedgeFunds quarter ${latestPeriod}: ${buyers.length} buying, ${sellers.length} selling, ${latestQ.length} total funds`);
 
-          // Also check for funds that exited (in prev but not latest)
-          const latestOwners = new Set(latestQ.map(d => d.Owner));
-          previousQ.forEach(d => {
-            if (!latestOwners.has(d.Owner)) sellCount++;
-          });
-
-          hedgeFundBuys  = buyCount;
-          hedgeFundSells = sellCount;
-          topBuyers.sort((a, b) => b.change - a.change);
-          topHedgeFund = topBuyers[0]?.owner || latestQ[0]?.Owner || null;
-
-          if (buyCount > sellCount && buyCount > 0) {
-            hedgeFundSignal = "bullish";
-            hedgeFundNote   = `${buyCount} fund(s) increasing/new positions vs ${sellCount} decreasing (${latestQ.length} total holders) · ${latestPeriod}${topHedgeFund ? ` · Top buyer: ${topHedgeFund}` : ""}`;
-          } else if (sellCount > buyCount && sellCount > 0) {
-            hedgeFundSignal = "bearish";
-            hedgeFundNote   = `${sellCount} fund(s) reducing positions vs ${buyCount} increasing (${latestQ.length} total holders) · ${latestPeriod}`;
-          } else {
-            hedgeFundNote = `${latestQ.length} institutional holders — stable positioning · ${latestPeriod}`;
-          }
-        } else {
-          // Only one quarter of data — can't compute direction, but show holder count
-          hedgeFundNote = `${latestQ.length} institutional holder(s) on record · ${latestPeriod} — need 2 quarters for trend`;
-          topHedgeFund  = latestQ[0]?.Owner || null;
+        if (buyers.length > sellers.length && buyers.length > 0) {
+          hedgeFundSignal = "bullish";
+          hedgeFundNote   = `${buyers.length} fund(s) increasing positions vs ${sellers.length} decreasing — ${latestPeriod}${topHedgeFund ? ` · Top buyer: ${topHedgeFund}` : ""}`;
+        } else if (sellers.length > buyers.length && sellers.length > 0) {
+          hedgeFundSignal = "bearish";
+          hedgeFundNote   = `${sellers.length} fund(s) reducing positions vs ${buyers.length} increasing — ${latestPeriod}`;
+        } else if (latestQ.length > 0) {
+          hedgeFundNote = `${latestQ.length} institutional holders — stable positioning — ${latestPeriod}`;
         }
       } else {
         console.log(`  [${ticker}] HedgeFunds: 0 records`);
