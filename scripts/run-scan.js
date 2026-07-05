@@ -118,172 +118,159 @@ async function fetchTweets(ticker, query) {
 async function fetchInstitutionalData(ticker, type) {
   const apiKey = process.env.QUIVER_QUANT_API_KEY;
 
-  // ETFs: skip insider/congressional data, only get institutional if available
   if (type === "etf") {
-    return buildETFInstitutional();
+    return {
+      source: "N/A — ETF", available: false,
+      instSentiment: "neutral", insiderSignal: "neutral",
+      congressSignal: "neutral", congressNote: "N/A — ETF",
+      lobbyingNote: "N/A — ETF", instNote: "ETFs do not have this data",
+      quarterCovered: getQuarterLabel(), lastUpdated: new Date().toISOString(),
+    };
   }
 
-  // No API key configured — return placeholder
-  if (!apiKey) {
-    return buildNoKeyInstitutional();
-  }
+  if (!apiKey) return buildNoKeyInstitutional();
 
-  const headers = {
-    Authorization: `Bearer ${apiKey}`,
-    Accept:        "application/json",
-  };
+  const headers = { Authorization: `Bearer ${apiKey}`, Accept: "application/json" };
+
+  // ── 1. Congressional Trading ──────────────────────────────────────────────
+  let congressSignal = "neutral";
+  let congressNote   = "No congressional trades found";
+  let congressBuys   = 0, congressSells = 0;
 
   try {
-    // ── 1. Institutional Ownership (13F filings) ─────────────────────────────
-    let instSentiment    = "neutral";
-    let instOwnership    = null;
-    let instChangeShares = null;
-    let instHolders      = null;
-    let topBuyer         = null;
-    let topSeller        = null;
-
-    const instRes = await fetch(
-      `https://api.quiverquant.com/beta/historical/hedgefunds/${ticker}`,
-      { headers }
-    );
-
-    if (instRes.ok) {
-      const instData = await instRes.json();
-      console.log(`  [${ticker}] Quiver institutional: ${instRes.status} — ${instData?.length || 0} records`);
-      if (instData && instData.length > 0) {
-        const latest   = instData[0];
-        const previous = instData[1];
-
-        // Quiver hedgefunds endpoint returns array of fund positions
-        // Each entry: { Date, Owner (fund name), Shares, PercentOwnership }
-        // Group by date to get most recent quarter vs previous quarter
-        const dates     = [...new Set(instData.map(d => d.Date))].sort().reverse();
-        const latestQ   = instData.filter(d => d.Date === dates[0]);
-        const previousQ = dates[1] ? instData.filter(d => d.Date === dates[1]) : [];
-
-        const latestShares   = latestQ.reduce((s, d)   => s + (parseFloat(d.Shares)   || 0), 0);
-        const previousShares = previousQ.reduce((s, d) => s + (parseFloat(d.Shares)   || 0), 0);
-        instHolders          = latestQ.length;
-        topBuyer             = latestQ[0]?.Owner || null;
-
-        const pct     = latestQ[0]?.PercentOwnership;
-        instOwnership = pct ? `${(parseFloat(pct) * 100).toFixed(1)}%` : null;
-
-        if (latestShares && previousShares) {
-          instChangeShares = latestShares - previousShares;
-          instSentiment    = instChangeShares > 0 ? "bullish"
-                           : instChangeShares < 0 ? "bearish"
-                           : "neutral";
-        } else if (latestShares > 0) {
-          instSentiment = "neutral";
-        }
-      }
-    } else {
-      const errText = await instRes.text().catch(() => "");
-      console.log(`  [${ticker}] Quiver institutional: ${instRes.status} — ${errText.slice(0,100)}`);
-    }
-
-    await sleep(300);
-
-    // ── 2. Congressional Trading ──────────────────────────────────────────────
-    let congressSignal = "neutral";
-    let congressNote   = "No recent congressional trades";
-
-    const congRes = await fetch(
+    const res = await fetch(
       `https://api.quiverquant.com/beta/historical/congresstrading/${ticker}`,
       { headers }
     );
-
-    if (congRes.ok) {
-      const congData = await congRes.json();
-      console.log(`  [${ticker}] Quiver congress: ${congRes.status} — ${congData?.length || 0} records`);
-      if (congData && congData.length > 0) {
-        // Look at trades in last 180 days
-        const cutoff   = new Date();
-        cutoff.setDate(cutoff.getDate() - 180);
-        const recent   = congData.filter(t => new Date(t.TransactionDate) > cutoff);
-        // Quiver congress field: Transaction = "Purchase" or "Sale" or "Sale (Partial)"
-        const buys     = recent.filter(t => (t.Transaction || "").toLowerCase().includes("purchase"));
-        const sells    = recent.filter(t => (t.Transaction || "").toLowerCase().includes("sale"));
-
-        if (recent.length > 0) {
-          if (buys.length > sells.length) {
-            congressSignal = "bullish";
-            congressNote   = `${buys.length} congressional purchase(s) vs ${sells.length} sale(s) in last 180 days`;
-          } else if (sells.length > buys.length) {
-            congressSignal = "bearish";
-            congressNote   = `${sells.length} congressional sale(s) vs ${buys.length} purchase(s) in last 180 days`;
-          } else {
-            congressNote   = `${recent.length} congressional trade(s) — mixed signal`;
-          }
-        }
+    if (res.ok) {
+      const data   = await res.json();
+      console.log(`  [${ticker}] Congress: ${data?.length || 0} records`);
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 365);
+      const recent = (data || []).filter(t => new Date(t.TransactionDate || t.Date) > cutoff);
+      const buys   = recent.filter(t => (t.Transaction || "").toLowerCase().includes("purchase"));
+      const sells  = recent.filter(t => (t.Transaction || "").toLowerCase().includes("sale"));
+      congressBuys = buys.length; congressSells = sells.length;
+      if (buys.length > sells.length && buys.length > 0) {
+        congressSignal = "bullish";
+        congressNote   = `${buys.length} congressional purchase(s) vs ${sells.length} sale(s) — last 12mo`;
+      } else if (sells.length > buys.length && sells.length > 0) {
+        congressSignal = "bearish";
+        congressNote   = `${sells.length} congressional sale(s) vs ${buys.length} purchase(s) — last 12mo`;
+      } else if (recent.length > 0) {
+        congressNote = `${recent.length} congressional trade(s) — mixed signal`;
       }
     } else {
-      console.log(`  [${ticker}] Quiver congress: ${congRes.status}`);
+      console.log(`  [${ticker}] Congress: ${res.status}`);
     }
+  } catch (e) { console.log(`  [${ticker}] Congress error: ${e.message}`); }
+  await sleep(350);
 
-    await sleep(300);
+  // ── 2. Insider Trading ────────────────────────────────────────────────────
+  let insiderSignal = "neutral";
+  let insiderNote   = "No insider trades found";
 
-    // ── 3. Insider Trading (Form 4) ───────────────────────────────────────────
-    let insiderSignal = "neutral";
-    let insiderNote   = "No recent insider trades";
-
-    const insiderRes = await fetch(
+  try {
+    const res = await fetch(
       `https://api.quiverquant.com/beta/historical/insiders/${ticker}`,
       { headers }
     );
-
-    if (insiderRes.ok) {
-      const insiderData = await insiderRes.json();
-      console.log(`  [${ticker}] Quiver insiders: ${insiderRes.status} — ${insiderData?.length || 0} records`);
-      if (insiderData && insiderData.length > 0) {
-        const cutoff  = new Date();
-        cutoff.setDate(cutoff.getDate() - 90);
-        const recent  = insiderData.filter(t => new Date(t.Date) > cutoff);
-        // Quiver insiders: AcquiredDisposed = "A" (acquired/buy) or "D" (disposed/sell)
-        const buys    = recent.filter(t => t.AcquiredDisposed === "A" || (t.Transaction || "").toLowerCase() === "buy");
-        const sells   = recent.filter(t => t.AcquiredDisposed === "D" || (t.Transaction || "").toLowerCase() === "sell");
-
-        if (recent.length > 0) {
-          if (buys.length > sells.length && buys.length > 0) {
-            insiderSignal = "bullish";
-            insiderNote   = `${buys.length} insider purchase(s) vs ${sells.length} sale(s) in last 90 days`;
-            topBuyer      = recent[0]?.Name || null;
-          } else if (sells.length > buys.length && sells.length > 0) {
-            insiderSignal = "bearish";
-            insiderNote   = `${sells.length} insider sale(s) vs ${buys.length} purchase(s) in last 90 days`;
-            topSeller     = recent[0]?.Name || null;
-          } else {
-            insiderNote   = `${recent.length} insider filing(s) — mixed signal`;
-          }
-        }
+    if (res.ok) {
+      const data   = await res.json();
+      console.log(`  [${ticker}] Insiders: ${data?.length || 0} records`);
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 90);
+      const recent = (data || []).filter(t => new Date(t.Date) > cutoff);
+      const buys   = recent.filter(t => t.AcquiredDisposed === "A");
+      const sells  = recent.filter(t => t.AcquiredDisposed === "D");
+      if (buys.length > sells.length && buys.length > 0) {
+        insiderSignal = "bullish";
+        insiderNote   = `${buys.length} open-market purchase(s) vs ${sells.length} sale(s) — last 90 days`;
+      } else if (sells.length > buys.length && sells.length > 0) {
+        insiderSignal = "bearish";
+        insiderNote   = `${sells.length} open-market sale(s) vs ${buys.length} purchase(s) — last 90 days`;
+      } else if (recent.length > 0) {
+        insiderNote = `${recent.length} insider filing(s) — awards/options, no open-market trades`;
       }
     } else {
-      console.log(`  [${ticker}] Quiver insiders: ${insiderRes.status}`);
+      console.log(`  [${ticker}] Insiders: ${res.status} — may require higher Quiver tier`);
+      insiderNote = `Insider data: API returned ${res.status}`;
     }
+  } catch (e) { console.log(`  [${ticker}] Insiders error: ${e.message}`); }
+  await sleep(350);
 
-    return {
-      source:           "Quiver Quant",
-      available:        true,
-      instSentiment,
-      instOwnership,
-      instHolders,
-      instChangeShares,
-      topBuyer,
-      topSeller,
-      congressSignal,
-      congressNote,
-      insiderSignal,
-      insiderNote,
-      quarterCovered:   getQuarterLabel(),
-      lastUpdated:      new Date().toISOString(),
-    };
+  // ── 3. Lobbying ───────────────────────────────────────────────────────────
+  let lobbyingNote  = "No lobbying data found";
+  let lobbyingTotal = 0;
 
-  } catch (e) {
-    console.error(`  [${ticker}] Quiver error: ${e.message}`);
-    return buildNoKeyInstitutional();
-  }
+  try {
+    const res = await fetch(
+      `https://api.quiverquant.com/beta/historical/lobbying/${ticker}`,
+      { headers }
+    );
+    if (res.ok) {
+      const data   = await res.json();
+      console.log(`  [${ticker}] Lobbying: ${data?.length || 0} records`);
+      const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 1);
+      const recent = (data || []).filter(t => new Date(t.Date || t.year) > cutoff);
+      if (recent.length > 0) {
+        lobbyingTotal = recent.reduce((s, d) => s + (parseFloat(d.Amount) || 0), 0);
+        lobbyingNote  = lobbyingTotal > 0
+          ? `$${(lobbyingTotal / 1000000).toFixed(1)}M lobbying spend in last 12 months`
+          : `${recent.length} lobbying record(s) in last 12 months`;
+      }
+    } else {
+      console.log(`  [${ticker}] Lobbying: ${res.status}`);
+    }
+  } catch (e) { console.log(`  [${ticker}] Lobbying error: ${e.message}`); }
+  await sleep(350);
+
+  // ── 4. Government Contracts (live endpoint — check if ticker mentioned) ───
+  let govContractNote = "No recent government contracts";
+  let hasGovContracts = false;
+
+  try {
+    const res = await fetch(
+      `https://api.quiverquant.com/beta/live/governmentcontracts`,
+      { headers }
+    );
+    if (res.ok) {
+      const data    = await res.json();
+      const matches = (data || []).filter(d =>
+        (d.Ticker || "").toUpperCase() === ticker.toUpperCase()
+      );
+      console.log(`  [${ticker}] Gov contracts: ${matches.length} matches from live feed`);
+      if (matches.length > 0) {
+        hasGovContracts = true;
+        const total = matches.reduce((s, d) => s + (parseFloat(d.Amount) || 0), 0);
+        govContractNote = total > 0
+          ? `${matches.length} recent gov contract(s) totaling $${(total / 1000000).toFixed(1)}M`
+          : `${matches.length} recent government contract(s) found`;
+      }
+    } else {
+      console.log(`  [${ticker}] Gov contracts: ${res.status}`);
+    }
+  } catch (e) { console.log(`  [${ticker}] Gov contracts error: ${e.message}`); }
+
+  // ── Composite institutional signal ────────────────────────────────────────
+  // Congress + insider signals weighted together
+  const signals = [congressSignal, insiderSignal].filter(s => s !== "neutral");
+  const bulls   = signals.filter(s => s === "bullish").length;
+  const bears   = signals.filter(s => s === "bearish").length;
+  const instSentiment = bulls > bears ? "bullish" : bears > bulls ? "bearish" : "neutral";
+
+  return {
+    source:          "Quiver Quant",
+    available:       true,
+    instSentiment,
+    instNote:        "13F hedge fund holdings not available via Quiver API public endpoints",
+    congressSignal,  congressNote, congressBuys, congressSells,
+    insiderSignal,   insiderNote,
+    lobbyingNote,    lobbyingTotal,
+    hasGovContracts, govContractNote,
+    quarterCovered:  getQuarterLabel(),
+    lastUpdated:     new Date().toISOString(),
+  };
 }
+
 
 function buildETFInstitutional() {
   return {
