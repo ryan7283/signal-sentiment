@@ -117,7 +117,6 @@ async function fetchTweets(ticker, query) {
 
 async function fetchInstitutionalData(ticker, type) {
   const apiKey = process.env.QUIVER_QUANT_API_KEY;
-  const fmpKey = process.env.FMP_API_KEY || "demo"; // free tier — 250 calls/day
 
   if (type === "etf") {
     return {
@@ -132,17 +131,22 @@ async function fetchInstitutionalData(ticker, type) {
 
   if (!apiKey) return buildNoKeyInstitutional();
 
-  const quiverHeaders = { Authorization: `Bearer ${apiKey}`, Accept: "application/json" };
+  // CONFIRMED AUTH: Quiver uses "Token <key>" not "Bearer <key>"
+  const headers = {
+    Accept: "application/json",
+    Authorization: `Token ${apiKey}`,
+  };
 
-  // ── 1. Congressional Trading (Quiver) ─────────────────────────────────────
+  // ── 1. Congressional Trading ──────────────────────────────────────────────
+  // Endpoint: /beta/historical/congresstrading/{ticker}
   let congressSignal = "neutral";
   let congressNote   = "No congressional trades found";
-  let congressBuys   = 0, congressSells = 0;
+  let congressBuys = 0, congressSells = 0;
 
   try {
     const res = await fetch(
       `https://api.quiverquant.com/beta/historical/congresstrading/${ticker}`,
-      { headers: quiverHeaders }
+      { headers }
     );
     if (res.ok) {
       const data   = await res.json();
@@ -165,16 +169,17 @@ async function fetchInstitutionalData(ticker, type) {
       console.log(`  [${ticker}] Congress: ${res.status}`);
     }
   } catch (e) { console.log(`  [${ticker}] Congress error: ${e.message}`); }
-  await sleep(350);
+  await sleep(400);
 
-  // ── 2. Insider Trading (Quiver) ───────────────────────────────────────────
+  // ── 2. Insider Trading ────────────────────────────────────────────────────
+  // Endpoint: /beta/live/insiders?ticker={ticker}  (NOT /historical/insiders/{ticker})
   let insiderSignal = "neutral";
-  let insiderNote   = "No insider trades found";
+  let insiderNote   = "No recent insider trades found";
 
   try {
     const res = await fetch(
-      `https://api.quiverquant.com/beta/historical/insiders/${ticker}`,
-      { headers: quiverHeaders }
+      `https://api.quiverquant.com/beta/live/insiders?ticker=${ticker}`,
+      { headers }
     );
     if (res.ok) {
       const data   = await res.json();
@@ -190,133 +195,169 @@ async function fetchInstitutionalData(ticker, type) {
         insiderSignal = "bearish";
         insiderNote   = `${sells.length} open-market sale(s) vs ${buys.length} purchase(s) — last 90 days`;
       } else if (recent.length > 0) {
-        insiderNote = `${recent.length} insider filing(s) — awards/options only`;
+        insiderNote = `${recent.length} insider filing(s) — awards/options, no open-market trades`;
       }
     } else {
       console.log(`  [${ticker}] Insiders: ${res.status}`);
-      insiderNote = `Insider data: API returned ${res.status}`;
     }
   } catch (e) { console.log(`  [${ticker}] Insiders error: ${e.message}`); }
-  await sleep(350);
+  await sleep(400);
 
-  // ── 3. Lobbying (Quiver) ──────────────────────────────────────────────────
+  // ── 3. Hedge Fund 13F Activity ────────────────────────────────────────────
+  // Endpoint: /beta/live/sec13fchanges?ticker={ticker}
+  // Returns quarterly changes in institutional positions from 13F filings
+  let hedgeFundSignal  = "neutral";
+  let hedgeFundNote    = "No hedge fund activity found";
+  let hedgeFundBuys    = 0;
+  let hedgeFundSells   = 0;
+  let topHedgeFund     = null;
+
+  try {
+    const res = await fetch(
+      `https://api.quiverquant.com/beta/live/sec13fchanges?ticker=${ticker}`,
+      { headers }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      console.log(`  [${ticker}] HedgeFunds 13F: ${data?.length || 0} records`);
+      if (data && data.length > 0) {
+        // Each record has: Owner, Shares, Change, ReportPeriod, Date
+        // Positive Change = buying, Negative Change = selling
+        const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 180);
+        const recent = data.filter(d => new Date(d.Date || d.ReportPeriod) > cutoff);
+        const buyers = recent.filter(d => (parseFloat(d.Change) || 0) > 0);
+        const sellers = recent.filter(d => (parseFloat(d.Change) || 0) < 0);
+        hedgeFundBuys  = buyers.length;
+        hedgeFundSells = sellers.length;
+        topHedgeFund   = recent[0]?.Owner || null;
+
+        if (buyers.length > sellers.length && buyers.length > 0) {
+          hedgeFundSignal = "bullish";
+          hedgeFundNote   = `${buyers.length} fund(s) increasing positions vs ${sellers.length} decreasing — last 2 qtrs. Top: ${topHedgeFund || "N/A"}`;
+        } else if (sellers.length > buyers.length && sellers.length > 0) {
+          hedgeFundSignal = "bearish";
+          hedgeFundNote   = `${sellers.length} fund(s) decreasing positions vs ${buyers.length} increasing — last 2 qtrs. Top: ${topHedgeFund || "N/A"}`;
+        } else if (recent.length > 0) {
+          hedgeFundNote = `${recent.length} 13F record(s) — neutral positioning. Top holder: ${topHedgeFund || "N/A"}`;
+        }
+      }
+    } else {
+      console.log(`  [${ticker}] HedgeFunds 13F: ${res.status}`);
+    }
+  } catch (e) { console.log(`  [${ticker}] HedgeFunds error: ${e.message}`); }
+  await sleep(400);
+
+  // ── 4. Government Contracts ───────────────────────────────────────────────
+  // Endpoint: /beta/historical/govcontractsall/{ticker}
+  let govContractNote  = "No government contracts found";
+  let govContractTotal = 0;
+  let hasGovContracts  = false;
+
+  try {
+    const res = await fetch(
+      `https://api.quiverquant.com/beta/historical/govcontractsall/${ticker}`,
+      { headers }
+    );
+    if (res.ok) {
+      const data   = await res.json();
+      const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 1);
+      const recent = (data || []).filter(d => new Date(d.Date) > cutoff);
+      console.log(`  [${ticker}] GovContracts: ${data?.length || 0} total, ${recent.length} recent`);
+      if (recent.length > 0) {
+        hasGovContracts  = true;
+        govContractTotal = recent.reduce((s, d) => s + (parseFloat(d.Amount) || 0), 0);
+        govContractNote  = govContractTotal > 0
+          ? `${recent.length} contract(s) worth $${(govContractTotal / 1000000).toFixed(1)}M — last 12mo`
+          : `${recent.length} government contract(s) — last 12mo`;
+      }
+    } else {
+      console.log(`  [${ticker}] GovContracts: ${res.status}`);
+    }
+  } catch (e) { console.log(`  [${ticker}] GovContracts error: ${e.message}`); }
+  await sleep(400);
+
+  // ── 5. Lobbying ───────────────────────────────────────────────────────────
+  // Endpoint: /beta/historical/lobbying/{ticker}
   let lobbyingNote  = "No lobbying data found";
   let lobbyingTotal = 0;
 
   try {
     const res = await fetch(
       `https://api.quiverquant.com/beta/historical/lobbying/${ticker}`,
-      { headers: quiverHeaders }
+      { headers }
     );
     if (res.ok) {
       const data   = await res.json();
       const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 1);
-      const recent = (data || []).filter(t => new Date(t.Date || t.year) > cutoff);
+      const recent = (data || []).filter(d => new Date(d.Date) > cutoff);
+      console.log(`  [${ticker}] Lobbying: ${data?.length || 0} total, ${recent.length} recent`);
       if (recent.length > 0) {
         lobbyingTotal = recent.reduce((s, d) => s + (parseFloat(d.Amount) || 0), 0);
         lobbyingNote  = lobbyingTotal > 0
           ? `$${(lobbyingTotal / 1000000).toFixed(1)}M lobbying spend — last 12mo`
           : `${recent.length} lobbying record(s) — last 12mo`;
       }
-      console.log(`  [${ticker}] Lobbying: ${data?.length || 0} records — ${lobbyingNote}`);
     } else {
       console.log(`  [${ticker}] Lobbying: ${res.status}`);
     }
   } catch (e) { console.log(`  [${ticker}] Lobbying error: ${e.message}`); }
-  await sleep(350);
+  await sleep(400);
 
-  // ── 4. Government Contracts (Quiver live feed) ────────────────────────────
-  let govContractNote = "No recent government contracts";
-  let hasGovContracts = false;
+  // ── 6. Off-Exchange / Dark Pool Trading ───────────────────────────────────
+  // Endpoint: /beta/historical/offexchange/{ticker}
+  let offExchangeNote   = "No off-exchange data found";
+  let offExchangeSignal = "neutral";
 
   try {
     const res = await fetch(
-      `https://api.quiverquant.com/beta/live/governmentcontracts`,
-      { headers: quiverHeaders }
+      `https://api.quiverquant.com/beta/historical/offexchange/${ticker}`,
+      { headers }
     );
     if (res.ok) {
-      const data    = await res.json();
-      const matches = (data || []).filter(d =>
-        (d.Ticker || "").toUpperCase() === ticker.toUpperCase()
-      );
-      console.log(`  [${ticker}] Gov contracts: ${matches.length} matches`);
-      if (matches.length > 0) {
-        hasGovContracts = true;
-        const total = matches.reduce((s, d) => s + (parseFloat(d.Amount) || 0), 0);
-        govContractNote = total > 0
-          ? `${matches.length} recent gov contract(s) — $${(total / 1000000).toFixed(1)}M total`
-          : `${matches.length} recent government contract(s)`;
-      }
-    } else {
-      console.log(`  [${ticker}] Gov contracts: ${res.status}`);
-    }
-  } catch (e) { console.log(`  [${ticker}] Gov contracts error: ${e.message}`); }
-  await sleep(350);
+      const data   = await res.json();
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
+      const recent = (data || []).filter(d => new Date(d.Date) > cutoff);
+      console.log(`  [${ticker}] OffExchange: ${data?.length || 0} total, ${recent.length} recent`);
+      if (recent.length > 0) {
+        // ShortVolume as % of total volume — high short volume = bearish pressure
+        const avgShortPct = recent.reduce((s, d) => {
+          const total = parseFloat(d.TotalVolume) || 0;
+          const short = parseFloat(d.ShortVolume) || 0;
+          return s + (total > 0 ? short / total : 0);
+        }, 0) / recent.length;
 
-  // ── 5. Institutional / Hedge Fund Holdings (FMP free tier) ───────────────
-  // Financial Modeling Prep — 250 free calls/day, no credit card needed
-  // Sign up free at: financialmodelingprep.com/developer/docs
-  // Add FMP_API_KEY to GitHub Secrets to activate (or leave blank for demo key)
-  let hedgeFundSignal  = "neutral";
-  let hedgeFundNote    = "No institutional data available";
-  let instOwnershipPct = null;
-  let instHolders      = null;
-  let topHolder        = null;
-
-  try {
-    const fmpUrl = `https://financialmodelingprep.com/api/v3/institutional-holder/${ticker}?apikey=${fmpKey}`;
-    const res    = await fetch(fmpUrl);
-    if (res.ok) {
-      const data = await res.json();
-      console.log(`  [${ticker}] FMP institutional: ${data?.length || 0} holders`);
-      if (data && data.length > 0 && !data.hasOwnProperty("Error Message")) {
-        // Sort by shares held descending
-        const sorted = data.sort((a, b) => (b.shares || 0) - (a.shares || 0));
-        instHolders  = sorted.length;
-        topHolder    = sorted[0]?.holder || null;
-
-        // Calculate total institutional shares
-        const totalShares = sorted.reduce((s, d) => s + (parseFloat(d.shares) || 0), 0);
-
-        // Check if share counts changed vs prior period
-        const increased = sorted.filter(d => (d.change || 0) > 0).length;
-        const decreased = sorted.filter(d => (d.change || 0) < 0).length;
-
-        if (increased > decreased && increased > 0) {
-          hedgeFundSignal = "bullish";
-          hedgeFundNote   = `${instHolders} institutional holders — ${increased} increasing positions vs ${decreased} decreasing. Top: ${topHolder}`;
-        } else if (decreased > increased && decreased > 0) {
-          hedgeFundSignal = "bearish";
-          hedgeFundNote   = `${instHolders} institutional holders — ${decreased} decreasing positions vs ${increased} increasing. Top: ${topHolder}`;
+        if (avgShortPct > 0.55) {
+          offExchangeSignal = "bearish";
+          offExchangeNote   = `High off-exchange short activity: ${(avgShortPct * 100).toFixed(1)}% avg short ratio — last 30 days`;
+        } else if (avgShortPct < 0.40) {
+          offExchangeSignal = "bullish";
+          offExchangeNote   = `Low off-exchange short activity: ${(avgShortPct * 100).toFixed(1)}% avg short ratio — last 30 days`;
         } else {
-          hedgeFundNote = `${instHolders} institutional holders — stable. Top: ${topHolder || "N/A"}`;
+          offExchangeNote = `Normal off-exchange activity: ${(avgShortPct * 100).toFixed(1)}% avg short ratio — last 30 days`;
         }
-      } else if (data?.["Error Message"]) {
-        console.log(`  [${ticker}] FMP: ${data["Error Message"]}`);
-        hedgeFundNote = "FMP demo key limit reached — add FMP_API_KEY to GitHub Secrets";
       }
     } else {
-      console.log(`  [${ticker}] FMP institutional: ${res.status}`);
+      console.log(`  [${ticker}] OffExchange: ${res.status}`);
     }
-  } catch (e) { console.log(`  [${ticker}] FMP error: ${e.message}`); }
+  } catch (e) { console.log(`  [${ticker}] OffExchange error: ${e.message}`); }
 
-  // ── Composite institutional signal ─────────────────────────────────────────
-  const allSignals = [congressSignal, insiderSignal, hedgeFundSignal].filter(s => s !== "neutral");
-  const bulls      = allSignals.filter(s => s === "bullish").length;
-  const bears      = allSignals.filter(s => s === "bearish").length;
+  // ── Composite institutional signal ────────────────────────────────────────
+  const signals    = [congressSignal, insiderSignal, hedgeFundSignal, offExchangeSignal]
+                      .filter(s => s !== "neutral");
+  const bulls      = signals.filter(s => s === "bullish").length;
+  const bears      = signals.filter(s => s === "bearish").length;
   const instSentiment = bulls > bears ? "bullish" : bears > bulls ? "bearish" : "neutral";
 
   return {
-    source:           "Quiver Quant + FMP",
+    source:           "Quiver Quant",
     available:        true,
     instSentiment,
-    congressSignal,   congressNote, congressBuys, congressSells,
+    congressSignal,   congressNote,  congressBuys, congressSells,
     insiderSignal,    insiderNote,
+    hedgeFundSignal,  hedgeFundNote, hedgeFundBuys, hedgeFundSells, topHedgeFund,
+    govContractNote,  govContractTotal, hasGovContracts,
     lobbyingNote,     lobbyingTotal,
-    hasGovContracts,  govContractNote,
-    hedgeFundSignal,  hedgeFundNote,
-    instOwnershipPct, instHolders, topHolder,
-    instNote:         "Institutional: FMP free tier (250 calls/day) — upgrade to Unusual Whales for full 13F",
+    offExchangeSignal, offExchangeNote,
     quarterCovered:   getQuarterLabel(),
     lastUpdated:      new Date().toISOString(),
   };
