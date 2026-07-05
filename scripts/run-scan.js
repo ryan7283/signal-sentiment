@@ -77,171 +77,167 @@ async function fetchTweets(ticker, query) {
 // ─── SEC EDGAR INSTITUTIONAL DATA (FREE) ─────────────────────────────────────
 
 async function fetchInstitutionalData(ticker, type) {
-  // ETFs don't have 13F or insider filing data — skip
+  // ETFs don't have Form 4 insider filings
   if (type === "etf") {
     return {
       source: "N/A — ETF", available: false,
-      filingCount: 0, uniqueFilers: 0, topFilers: "—",
-      instSentiment: "neutral", insiderSignal: "neutral",
-      insiderNote: "ETFs do not have 13F or insider filing data",
-      quarterCovered: getQuarterLabel(), lastUpdated: new Date().toISOString(),
+      cik: null, companyName: "—",
+      insiderSignal: "neutral",
+      insiderNote: "ETFs do not have insider filing data",
+      recentForm4Count: 0, buyCount: 0, sellCount: 0,
+      instSentiment: "neutral",
+      instNote: "Add Quiver Quant API key for institutional 13F data",
+      quarterCovered: getQuarterLabel(),
+      lastUpdated: new Date().toISOString(),
     };
   }
 
   try {
-    const searchUrl = `https://efts.sec.gov/LATEST/search-index?q=%22${ticker}%22&dateRange=custom&startdt=${getQuarterStart()}&enddt=${new Date().toISOString().slice(0,10)}&forms=13F-HR`;
-    const searchRes = await fetch(searchUrl, {
-      headers: { "User-Agent": "SIGNAL-Bot signal@ryan7283.github.io" }
-    });
+    const headers = { "User-Agent": "SIGNAL ryan7283@github.io" };
 
-    if (!searchRes.ok) return buildEmptyInstitutional();
-    const searchData = await searchRes.json();
-    const hits = searchData.hits?.hits || [];
-
-    const filers = new Set();
-    hits.slice(0, 20).forEach(h => {
-      const entity = h._source?.entity_name || h._source?.display_names?.[0];
-      if (entity) filers.add(entity);
-    });
-
-    const companySearch = await fetch(
-      `https://www.sec.gov/cgi-bin/browse-edgar?company=${encodeURIComponent(ticker)}&CIK=&type=4&dateb=&owner=include&count=10&search_text=&action=getcompany&output=atom`,
-      { headers: { "User-Agent": "SIGNAL-Bot signal@ryan7283.github.io" } }
+    // ── STEP 1: Look up the company CIK from SEC ticker map ──────────────────
+    // SEC provides a free JSON map of all tickers to CIK numbers
+    const tickerMapRes = await fetch(
+      "https://www.sec.gov/files/company_tickers.json",
+      { headers }
     );
 
-    let insiderSignal = "neutral";
-    let insiderNote   = "No recent insider filings found";
+    let cik = null;
+    let companyName = ticker;
 
-    if (companySearch.ok) {
-      const xml = await companySearch.text();
-      const buyMatches  = (xml.match(/P - Purchase/gi) || []).length;
-      const sellMatches = (xml.match(/S - Sale/gi) || []).length;
-      if (buyMatches > sellMatches && buyMatches > 0) {
-        insiderSignal = "bullish";
-        insiderNote   = `${buyMatches} insider purchase(s) vs ${sellMatches} sale(s)`;
-      } else if (sellMatches > buyMatches && sellMatches > 0) {
-        insiderSignal = "bearish";
-        insiderNote   = `${sellMatches} insider sale(s) vs ${buyMatches} purchase(s)`;
-      } else if (buyMatches > 0 || sellMatches > 0) {
-        insiderNote = `${buyMatches} purchase(s), ${sellMatches} sale(s) — mixed`;
+    if (tickerMapRes.ok) {
+      const tickerMap = await tickerMapRes.json();
+      // The map is an object keyed by index number, each entry has cik_str, ticker, title
+      const entry = Object.values(tickerMap).find(
+        e => e.ticker?.toUpperCase() === ticker.toUpperCase()
+      );
+      if (entry) {
+        cik = String(entry.cik_str).padStart(10, "0");
+        companyName = entry.title || ticker;
+        console.log(`    CIK found for ${ticker}: ${cik} (${companyName})`);
       }
     }
 
-    const filingCount = hits.length;
-    const instSentiment = filingCount >= 10 ? "bullish" : filingCount <= 2 ? "bearish" : "neutral";
+    if (!cik) {
+      console.log(`    No CIK found for ${ticker}`);
+      return buildEmptyInstitutional(ticker);
+    }
+
+    // ── STEP 2: Fetch recent Form 4 filings (insider buy/sell) ───────────────
+    // SEC submissions endpoint gives all recent filings for a company
+    const submissionsRes = await fetch(
+      `https://data.sec.gov/submissions/CIK${cik}.json`,
+      { headers }
+    );
+
+    let insiderSignal = "neutral";
+    let insiderNote   = "No recent insider filings";
+    let recentForm4Count = 0;
+    let buyCount = 0, sellCount = 0;
+
+    if (submissionsRes.ok) {
+      const submissions = await submissionsRes.json();
+      const recent = submissions.filings?.recent || {};
+      const forms  = recent.form || [];
+      const dates  = recent.filingDate || [];
+
+      // Get Form 4 filings from last 90 days
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 90);
+
+      for (let i = 0; i < forms.length; i++) {
+        if (forms[i] !== "4") continue;
+        const filingDate = new Date(dates[i]);
+        if (filingDate < cutoff) continue;
+        recentForm4Count++;
+      }
+
+      // Get primary documents to check transaction codes
+      // We look at the most recent 5 Form 4s for buy/sell codes
+      const form4Indices = forms
+        .map((f, i) => ({ form: f, date: dates[i], idx: i }))
+        .filter(x => x.form === "4")
+        .slice(0, 10);
+
+      const accessions  = recent.accessionNumber || [];
+      const primaryDocs = recent.primaryDocument  || [];
+
+      for (const { idx } of form4Indices.slice(0, 5)) {
+        try {
+          const acc = accessions[idx]?.replace(/-/g, "");
+          const doc = primaryDocs[idx];
+          if (!acc || !doc) continue;
+
+          const xmlRes = await fetch(
+            `https://www.sec.gov/Archives/edgar/data/${parseInt(cik)}/${acc}/${doc}`,
+            { headers }
+          );
+          if (!xmlRes.ok) continue;
+          const xml = await xmlRes.text();
+
+          // Transaction codes: P = open market purchase, S = open market sale
+          const purchases = (xml.match(/<transactionCode>P<\/transactionCode>/g) || []).length;
+          const sales     = (xml.match(/<transactionCode>S<\/transactionCode>/g) || []).length;
+          buyCount  += purchases;
+          sellCount += sales;
+        } catch (e) {
+          // skip individual filing errors
+        }
+      }
+
+      if (recentForm4Count > 0) {
+        if (buyCount > sellCount && buyCount > 0) {
+          insiderSignal = "bullish";
+          insiderNote   = `${recentForm4Count} insider filing(s) — ${buyCount} open-market purchase(s) vs ${sellCount} sale(s) in last 90 days`;
+        } else if (sellCount > buyCount && sellCount > 0) {
+          insiderSignal = "bearish";
+          insiderNote   = `${recentForm4Count} insider filing(s) — ${sellCount} open-market sale(s) vs ${buyCount} purchase(s) in last 90 days`;
+        } else if (buyCount === 0 && sellCount === 0) {
+          insiderNote = `${recentForm4Count} insider filing(s) in last 90 days — awards/options only, no open-market trades`;
+        } else {
+          insiderNote = `${recentForm4Count} insider filing(s) — mixed: ${buyCount} purchase(s), ${sellCount} sale(s)`;
+        }
+      }
+    }
 
     return {
-      source: "SEC EDGAR (free)", available: true,
-      filingCount, uniqueFilers: filers.size,
-      topFilers: Array.from(filers).slice(0, 3).join(", ") || "—",
-      instSentiment, insiderSignal, insiderNote,
-      quarterCovered: getQuarterLabel(),
-      lastUpdated: new Date().toISOString(),
+      source:          "SEC EDGAR Form 4 (free)",
+      available:       true,
+      cik,
+      companyName,
+      insiderSignal,
+      insiderNote,
+      recentForm4Count,
+      buyCount,
+      sellCount,
+      // 13F institutional data requires paid source
+      instSentiment:   "n/a",
+      instNote:        "13F data requires Quiver Quant ($25/mo) — add QUIVER_QUANT_API_KEY to GitHub Secrets",
+      quarterCovered:  getQuarterLabel(),
+      lastUpdated:     new Date().toISOString(),
     };
 
   } catch (e) {
     console.error(`  [${ticker}] EDGAR error: ${e.message}`);
-    return buildEmptyInstitutional();
+    return buildEmptyInstitutional(ticker);
   }
 }
 
-function buildEmptyInstitutional() {
+
+function buildEmptyInstitutional(ticker) {
   return {
-    source: "SEC EDGAR (free)", available: false,
-    filingCount: 0, uniqueFilers: 0, topFilers: "—",
-    instSentiment: "neutral", insiderSignal: "neutral",
-    insiderNote: "No data found", quarterCovered: getQuarterLabel(),
+    source: "SEC EDGAR Form 4 (free)", available: false,
+    cik: null, companyName: ticker || "—",
+    insiderSignal: "neutral",
+    insiderNote: "Could not retrieve insider data",
+    recentForm4Count: 0, buyCount: 0, sellCount: 0,
+    instSentiment: "n/a",
+    instNote: "13F data requires Quiver Quant ($25/mo)",
+    quarterCovered: getQuarterLabel(),
     lastUpdated: new Date().toISOString(),
   };
 }
 
-function getQuarterStart() {
-  const now = new Date();
-  const q   = Math.floor(now.getMonth() / 3);
-  const year = now.getFullYear();
-  return [`${year}-01-01`,`${year}-04-01`,`${year}-07-01`,`${year}-10-01`][q];
-}
-
-function getQuarterLabel() {
-  const now = new Date();
-  return `Q${Math.floor(now.getMonth()/3)+1} ${now.getFullYear()}`;
-}
-
-// ─── SENTIMENT ANALYSIS ──────────────────────────────────────────────────────
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-async function analyzeSentiment(ticker, name, type, sector, tweets, yesterday) {
-  if (!tweets.length) {
-    const trend = calcTrend(0, yesterday);
-    return {
-      ticker, name, type, sector,
-      sentimentScore: 0, signal: "NEUTRAL",
-      bullCount: 0, bearCount: 0, neutralCount: 0,
-      keyThemes: [], topBullish: null, topBearish: null,
-      summary: "No posts found for this ticker in the last 24 hours.",
-      confidence: "low", tweetCount: 0,
-      volumeTrend: "silent", sentimentTrend: trend.trend,
-      sentimentDelta: 0, volumeDelta: 0, arrow: "→",
-      compositeScore: 0, analyzedAt: new Date().toISOString(),
-    };
-  }
-
-  const tweetBlock = tweets.slice(0, 30).map((t, i) => `${i + 1}. "${t}"`).join("\n");
-  const context    = type === "etf"
-    ? `This is an ETF (${sector}). Focus on fund flow sentiment, sector momentum, and macro themes.`
-    : `This is a stock in the ${sector} sector. Focus on company-specific sentiment, earnings expectations, and competitive positioning.`;
-
-  const message = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1000,
-    messages: [{
-      role: "user",
-      content: `You are a financial sentiment analysis engine. ${context}
-
-Analyze these ${tweets.length} recent social media posts about $${ticker} (${name}) and return ONLY valid JSON — no markdown, no preamble.
-
-Posts:
-${tweetBlock}
-
-Return exactly:
-{
-  "ticker": "${ticker}",
-  "name": "${name}",
-  "sentimentScore": <float -1.0 to 1.0>,
-  "signal": <"STRONG_BUY"|"BUY"|"NEUTRAL"|"SELL"|"STRONG_SELL">,
-  "bullCount": <integer>,
-  "bearCount": <integer>,
-  "neutralCount": <integer>,
-  "keyThemes": [<3-5 short theme strings>],
-  "topBullish": <most bullish post verbatim or null>,
-  "topBearish": <most bearish post verbatim or null>,
-  "summary": <2-sentence analyst-quality summary>,
-  "volumeTrend": <"surging"|"increasing"|"stable"|"declining"|"silent">,
-  "confidence": <"high"|"medium"|"low">
-}`
-    }],
-  });
-
-  const raw    = message.content.find(b => b.type === "text")?.text || "{}";
-  const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
-  const trend  = calcTrend(parsed.sentimentScore, yesterday);
-
-  const trendBonus  = trend.sentimentDelta > 0 ? 0.1 : trend.sentimentDelta < 0 ? -0.1 : 0;
-  const volumeBonus = trend.volumeDelta > 5 ? 0.1 : trend.volumeDelta < -5 ? -0.1 : 0;
-  const composite   = parseFloat(((parsed.sentimentScore * 0.6) + trendBonus + volumeBonus).toFixed(3));
-
-  return {
-    ...parsed, type, sector,
-    tweetCount:     tweets.length,
-    sentimentTrend: trend.trend,
-    sentimentDelta: trend.sentimentDelta,
-    volumeDelta:    trend.volumeDelta,
-    arrow:          trend.arrow,
-    compositeScore: Math.max(-1, Math.min(1, composite)),
-    analyzedAt:     new Date().toISOString(),
-  };
-}
 
 // ─── MAIN ────────────────────────────────────────────────────────────────────
 
