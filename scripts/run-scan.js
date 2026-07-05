@@ -60,13 +60,11 @@ function calcTrend(todayScore, yesterday) {
 async function fetchTweets(ticker, query) {
   const startTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-  // Quality filters applied to every search:
-  // - min_faves:5     → only posts with 5+ likes (eliminates bots, spam, zero-engagement noise)
-  // - -is:retweet     → original posts only, no retweets
-  // - lang:en         → English only
-  // - has:cashtags OR has:links → financial context (posts with $ tickers or article links)
-  // Note: is:verified removed — post-Elon it includes paid subscribers not just notable accounts
-  const qualityFilters = `-is:retweet lang:en min_faves:5`;
+  // Quality filters:
+  // - -is:retweet → original posts only
+  // - lang:en     → English only
+  // Note: min_faves removed — not supported on Twitter Basic tier
+  const qualityFilters = `-is:retweet lang:en`;
   const fullQuery      = `(${query}) ${qualityFilters}`;
   const encodedQuery   = encodeURIComponent(fullQuery);
 
@@ -131,7 +129,7 @@ async function fetchInstitutionalData(ticker, type) {
   }
 
   const headers = {
-    Authorization: `Token ${apiKey}`,
+    Authorization: `Bearer ${apiKey}`,
     Accept:        "application/json",
   };
 
@@ -151,22 +149,31 @@ async function fetchInstitutionalData(ticker, type) {
 
     if (instRes.ok) {
       const instData = await instRes.json();
+      console.log(`  [${ticker}] Quiver institutional: ${instRes.status} — ${instData?.length || 0} records`);
       if (instData && instData.length > 0) {
-        const latest    = instData[0];
-        const previous  = instData[1];
-        instOwnership    = latest.PercentOwnership ? `${(latest.PercentOwnership * 100).toFixed(1)}%` : null;
-        instHolders      = latest.Holders || null;
+        const latest   = instData[0];
+        const previous = instData[1];
 
-        // Calculate net share change vs prior quarter
-        if (latest.Shares && previous?.Shares) {
-          instChangeShares = latest.Shares - previous.Shares;
+        // Quiver field names: Shares, Holders, PercentOwnership (as decimal e.g. 0.45)
+        instHolders   = latest.Holders || latest.holders || null;
+        const pct     = latest.PercentOwnership || latest.percentOwnership;
+        instOwnership = pct ? `${(parseFloat(pct) * 100).toFixed(1)}%` : null;
+
+        const latestShares   = latest.Shares   || latest.shares   || 0;
+        const previousShares = previous?.Shares || previous?.shares || 0;
+
+        if (latestShares && previousShares) {
+          instChangeShares = latestShares - previousShares;
           instSentiment    = instChangeShares > 0 ? "bullish"
                            : instChangeShares < 0 ? "bearish"
                            : "neutral";
+        } else if (latestShares > 0) {
+          instSentiment = "neutral"; // have data but no prior quarter to compare
         }
       }
     } else {
-      console.log(`  [${ticker}] Quiver institutional: ${instRes.status}`);
+      const errText = await instRes.text().catch(() => "");
+      console.log(`  [${ticker}] Quiver institutional: ${instRes.status} — ${errText.slice(0,100)}`);
     }
 
     await sleep(300);
@@ -182,13 +189,15 @@ async function fetchInstitutionalData(ticker, type) {
 
     if (congRes.ok) {
       const congData = await congRes.json();
+      console.log(`  [${ticker}] Quiver congress: ${congRes.status} — ${congData?.length || 0} records`);
       if (congData && congData.length > 0) {
         // Look at trades in last 180 days
         const cutoff   = new Date();
         cutoff.setDate(cutoff.getDate() - 180);
         const recent   = congData.filter(t => new Date(t.TransactionDate) > cutoff);
-        const buys     = recent.filter(t => t.Transaction?.toLowerCase().includes("purchase"));
-        const sells    = recent.filter(t => t.Transaction?.toLowerCase().includes("sale"));
+        // Quiver congress field: Transaction = "Purchase" or "Sale" or "Sale (Partial)"
+        const buys     = recent.filter(t => (t.Transaction || "").toLowerCase().includes("purchase"));
+        const sells    = recent.filter(t => (t.Transaction || "").toLowerCase().includes("sale"));
 
         if (recent.length > 0) {
           if (buys.length > sells.length) {
@@ -219,12 +228,14 @@ async function fetchInstitutionalData(ticker, type) {
 
     if (insiderRes.ok) {
       const insiderData = await insiderRes.json();
+      console.log(`  [${ticker}] Quiver insiders: ${insiderRes.status} — ${insiderData?.length || 0} records`);
       if (insiderData && insiderData.length > 0) {
         const cutoff  = new Date();
         cutoff.setDate(cutoff.getDate() - 90);
         const recent  = insiderData.filter(t => new Date(t.Date) > cutoff);
-        const buys    = recent.filter(t => t.Transaction === "Buy" || t.AcquiredDisposed === "A");
-        const sells   = recent.filter(t => t.Transaction === "Sell" || t.AcquiredDisposed === "D");
+        // Quiver insiders: AcquiredDisposed = "A" (acquired/buy) or "D" (disposed/sell)
+        const buys    = recent.filter(t => t.AcquiredDisposed === "A" || (t.Transaction || "").toLowerCase() === "buy");
+        const sells   = recent.filter(t => t.AcquiredDisposed === "D" || (t.Transaction || "").toLowerCase() === "sell");
 
         if (recent.length > 0) {
           if (buys.length > sells.length && buys.length > 0) {
