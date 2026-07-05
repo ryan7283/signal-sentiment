@@ -168,12 +168,14 @@ async function fetchInsiderData(ticker, type) {
     }
 
     // Step 2: Fetch recent filings from SEC submissions API
+    await sleep(500); // be polite to SEC servers
     const subRes = await fetch(
       `https://data.sec.gov/submissions/CIK${cikPadded}.json`,
       { headers }
     );
 
     if (!subRes.ok) {
+      console.log(`    [${ticker}] submissions API failed: ${subRes.status} ${subRes.statusText}`);
       return buildEmptyInsider(`SEC submissions API error (${subRes.status})`);
     }
 
@@ -183,6 +185,8 @@ async function fetchInsiderData(ticker, type) {
     const dates       = recent.filingDate  || [];
     const accessions  = recent.accessionNumber || [];
     const primaryDocs = recent.primaryDocument  || [];
+
+    console.log(`    [${ticker}] Total filings in submissions: ${forms.length}`);
 
     // Step 3: Find Form 4 filings from last 90 days
     const cutoffDate  = get90DaysAgo();
@@ -195,6 +199,7 @@ async function fetchInsiderData(ticker, type) {
     }
 
     const recentForm4Count = form4Entries.length;
+    console.log(`    [${ticker}] Form 4 filings in last 90 days: ${recentForm4Count}`);
 
     // Step 4: Read actual XML of up to 5 recent Form 4s for buy/sell codes
     let buyCount = 0, sellCount = 0;
@@ -205,16 +210,20 @@ async function fetchInsiderData(ticker, type) {
         const cleanAcc = acc.replace(/-/g, "");
         const xmlUrl   = `https://www.sec.gov/Archives/edgar/data/${cikRaw}/${cleanAcc}/${doc}`;
         const xmlRes   = await fetch(xmlUrl, { headers });
-        if (!xmlRes.ok) continue;
+        if (!xmlRes.ok) {
+          console.log(`    [${ticker}] Form 4 XML fetch failed: ${xmlRes.status} for ${doc}`);
+          continue;
+        }
         const xml = await xmlRes.text();
 
         // Transaction code P = open market purchase, S = open market sale
         const purchases = (xml.match(/<transactionCode>P<\/transactionCode>/g) || []).length;
         const sales     = (xml.match(/<transactionCode>S<\/transactionCode>/g) || []).length;
+        console.log(`    [${ticker}] Form 4 ${doc}: P=${purchases} S=${sales}`);
         buyCount  += purchases;
         sellCount += sales;
       } catch (e) {
-        // Skip individual filing parse errors silently
+        console.log(`    [${ticker}] Form 4 parse error: ${e.message}`);
       }
     }
 
