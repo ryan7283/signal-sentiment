@@ -616,6 +616,113 @@ Return exactly this JSON:
   };
 }
 
+// ─── FMP ANALYST PRICE TARGETS (FREE TIER) ───────────────────────────────────
+// Endpoint: /v3/analyst-price-targets-summary/{ticker}
+// Returns: current price, avg/high/low analyst targets, analyst count
+// Free tier: 250 calls/day — more than enough for daily scan
+
+async function fetchAnalystData(ticker, type) {
+  const apiKey = process.env.FMP_API_KEY;
+
+  // ETFs don't have meaningful analyst price targets
+  if (type === "etf") {
+    return { available: false, note: "ETFs do not have analyst price targets" };
+  }
+
+  if (!apiKey) {
+    return { available: false, note: "Add FMP_API_KEY to GitHub Secrets to activate" };
+  }
+
+  try {
+    // Step 1: Get analyst price target summary
+    const targetRes = await fetch(
+      `https://financialmodelingprep.com/api/v3/analyst-price-targets-summary/${ticker}?apikey=${apiKey}`
+    );
+
+    if (!targetRes.ok) {
+      console.log(`  [${ticker}] FMP targets: ${targetRes.status}`);
+      return { available: false, note: `FMP returned ${targetRes.status}` };
+    }
+
+    const targetData = await targetRes.json();
+
+    // Validate response structure
+    if (!Array.isArray(targetData) || targetData.length === 0) {
+      if (targetData?.["Error Message"]) {
+        console.log(`  [${ticker}] FMP: ${targetData["Error Message"]}`);
+        return { available: false, note: "FMP API key limit reached or invalid" };
+      }
+      console.log(`  [${ticker}] FMP targets: no data`);
+      return { available: false, note: "No analyst coverage found" };
+    }
+
+    // Validate fields using getField for resilience
+    const record = targetData[0];
+    if (record.lastMonth === undefined && record.avgPriceTarget === undefined) {
+      console.log(`  [${ticker}] FMP targets: unexpected fields. Got: ${Object.keys(record).join(", ")}`);
+      return { available: false, note: "FMP response format changed" };
+    }
+
+    // Extract targets — FMP returns lastMonth, lastQuarter, lastYear, allTime objects
+    const latest = record.lastMonth || record.lastQuarter || record.lastYear || record;
+    const avgTarget  = parseFloat(getField(latest, "avgPriceTarget", "priceTarget", "avg") || 0);
+    const highTarget = parseFloat(getField(latest, "highPriceTarget", "high") || 0);
+    const lowTarget  = parseFloat(getField(latest, "lowPriceTarget", "low") || 0);
+    const numAnalysts = parseInt(getField(latest, "numOfAnalysts", "analysts", "count") || 0);
+
+    if (!avgTarget) {
+      console.log(`  [${ticker}] FMP: no avg target found in response`);
+      return { available: false, note: "No price target data available" };
+    }
+
+    await sleep(200); // be polite to FMP servers
+
+    // Step 2: Get current stock price
+    const priceRes = await fetch(
+      `https://financialmodelingprep.com/api/v3/quote-short/${ticker}?apikey=${apiKey}`
+    );
+
+    let currentPrice = null;
+    if (priceRes.ok) {
+      const priceData = await priceRes.json();
+      if (Array.isArray(priceData) && priceData.length > 0) {
+        currentPrice = parseFloat(getField(priceData[0], "price", "Price") || 0) || null;
+      }
+    }
+
+    if (!currentPrice) {
+      console.log(`  [${ticker}] FMP price: unavailable`);
+      return { available: false, note: "Could not fetch current price" };
+    }
+
+    // Calculate upside/downside %
+    const upsidePct = parseFloat(((avgTarget - currentPrice) / currentPrice * 100).toFixed(1));
+
+    console.log(`  [${ticker}] FMP: price $${currentPrice} → avg target $${avgTarget} → ${upsidePct > 0 ? "+" : ""}${upsidePct}% (${numAnalysts} analysts)`);
+
+    return {
+      available:    true,
+      currentPrice,
+      avgTarget,
+      highTarget,
+      lowTarget,
+      numAnalysts,
+      upsidePct,
+      signal:       upsidePct >= 20  ? "strong_upside"
+                  : upsidePct >= 5   ? "upside"
+                  : upsidePct <= -20 ? "strong_downside"
+                  : upsidePct <= -5  ? "downside"
+                  : "neutral",
+      lastUpdated: new Date().toISOString(),
+    };
+
+  } catch (e) {
+    console.log(`  [${ticker}] FMP error: ${e.message}`);
+    return { available: false, note: e.message };
+  }
+}
+
+
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -674,9 +781,19 @@ async function main() {
                       : finalScore <= -0.15 ? "SELL"
                       : "NEUTRAL";
 
+    // Fetch analyst price targets (FMP free tier)
+    process.stdout.write(`  ${ticker.padEnd(6)} Analyst targets...`);
+    const analyst = await fetchAnalystData(ticker, type || "stock");
+    if (analyst.available) {
+      process.stdout.write(` $${analyst.currentPrice} → $${analyst.avgTarget} (${analyst.upsidePct > 0 ? "+" : ""}${analyst.upsidePct}%)\n`);
+    } else {
+      process.stdout.write(` ${analyst.note}\n`);
+    }
+
     results.push({
       ...sentiment,
       institutional,
+      analyst,
       compositeScore: finalScore,
       signal:         finalSignal,
     });
