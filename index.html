@@ -654,6 +654,24 @@
     .setup-banner { flex-direction: column; }
   }
 
+  /* ── ANALYST TARGET PILL ── */
+  .target-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 10px;
+    letter-spacing: 0.03em;
+  }
+  .target-upside        { background: #052e16; color: #4ade80; border: 1px solid #14532d; }
+  .target-strong-upside { background: #052e16; color: #4ade80; border: 1px solid #16a34a; }
+  .target-downside      { background: #3b0000; color: #fca5a5; border: 1px solid #7f1d1d; }
+  .target-strong-downside { background: #450a0a; color: #ef4444; border: 1px solid #991b1b; }
+  .target-neutral       { background: #1c1917; color: #a8a29e; border: 1px solid #292524; }
+
   /* ── SCROLLBAR ── */
   ::-webkit-scrollbar { width: 5px; background: var(--bg); }
   ::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 3px; }
@@ -1171,7 +1189,22 @@ function renderCard(ticker, name) {
         const gov = instData.hasGovContracts ? '<span class="chip chip-bull">🏛 GOV CONTRACTS</span>' : '';
         return `<div class="inst-row">${instChip}${insiderChip}${congress}${hf}${gov}</div>
         <div style="font-size:9px;color:var(--muted);margin-top:4px">${instData.quarterCovered||''} · Quiver Quant</div>`;
-      })() : ''}`;
+      })() : ''}
+      ${(() => {
+        const a = r.analyst;
+        if (!a || !a.available) return '';
+        const cls = a.signal === 'strong_upside'   ? 'target-strong-upside'
+                  : a.signal === 'upside'           ? 'target-upside'
+                  : a.signal === 'strong_downside'  ? 'target-strong-downside'
+                  : a.signal === 'downside'         ? 'target-downside'
+                  : 'target-neutral';
+        const arrow = a.upsidePct > 0 ? '▲' : a.upsidePct < 0 ? '▼' : '→';
+        const sign  = a.upsidePct > 0 ? '+' : '';
+        return \`<div style="margin-top:8px;display:flex;align-items:center;gap:6px">
+          <span class="target-pill ${cls}">${arrow} ${sign}${a.upsidePct}% vs analyst target</span>
+          <span style="font-size:9px;color:var(--muted)">$${a.currentPrice} → $${a.avgTarget} avg (${a.numAnalysts} analysts)</span>
+        </div>\`;
+      })()}`;
   } else {
     const hasSample = !!SAMPLE_POSTS[ticker];
     body = `
@@ -1261,7 +1294,24 @@ function renderDetail(ticker) {
       </div>
 
       <div class="inst-note">📡 Source: Quiver Quant — Congressional trades, insider Form 4, hedge fund 13F, gov contracts, lobbying, off-exchange</div>
-    </div>` : instEd && !instEd.available ? `
+    </div>
+    ${(() => {
+      const a = r.analyst;
+      if (!a || !a.available) return '';
+      const cls = a.signal === 'strong_upside' || a.signal === 'upside' ? 'var(--green)' : a.signal === 'strong_downside' || a.signal === 'downside' ? 'var(--red)' : 'var(--amber)';
+      const sign = a.upsidePct > 0 ? '+' : '';
+      return \`<div class="inst-box" style="margin-top:10px;border-color:#1e3a5f">
+        <div class="box-label">Analyst Price Targets · FMP</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:10px">
+          <div><div class="box-label">Current Price</div><div class="box-val">$${a.currentPrice}</div></div>
+          <div><div class="box-label">Avg Target</div><div class="box-val">$${a.avgTarget}</div></div>
+          <div><div class="box-label">Upside/Down</div><div class="box-val" style="color:${cls}">${sign}${a.upsidePct}%</div></div>
+          <div><div class="box-label">Analysts</div><div class="box-val">${a.numAnalysts}</div></div>
+        </div>
+        <div style="font-size:11px;color:#64748b">Range: $${a.lowTarget} – $${a.highTarget} · ${sign}${a.upsidePct}% to consensus</div>
+      </div>\`;
+    })()}
+    ` : instEd && !instEd.available ? `
     <div class="inst-box">
       <div class="box-label">Institutional Intelligence</div>
       <div style="font-size:12px;color:var(--muted);padding:8px 0">${instEd.instNote || 'No institutional data available'}</div>
