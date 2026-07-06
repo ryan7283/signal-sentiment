@@ -32,6 +32,7 @@ jobs:
           TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           QUIVER_QUANT_API_KEY: ${{ secrets.QUIVER_QUANT_API_KEY }}
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
         run: node scripts/run-scan.js
 
       - name: Commit results
