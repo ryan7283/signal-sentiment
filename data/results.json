@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-07T01:21:23.237Z",
+  "generatedAt": "2026-07-07T15:40:58.677Z",
   "tickerCount": 14,
   "version": "9.0",
   "results": [
@@ -24,22 +24,22 @@
       "sentimentTrend": "improving",
       "sentimentDelta": 0,
       "arrow": "→",
-      "compositeScore": 0,
-      "analyzedAt": "2026-07-07T01:20:27.757Z",
+      "compositeScore": 0.08,
+      "analyzedAt": "2026-07-07T15:40:07.421Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
-        "instSentiment": "neutral",
+        "instSentiment": "bullish",
         "congressSignal": "bullish",
         "congressNote": "21 congressional purchase(s) vs 11 sale(s) — last 12mo",
         "congressBuys": 21,
         "congressSells": 11,
         "insiderSignal": "bearish",
         "insiderNote": "104 open-market sale(s) vs 12 purchase(s) — last 180 days",
-        "hedgeFundSignal": "bearish",
-        "hedgeFundNote": "15 fund(s) reducing positions vs 12 increasing — 2026-06-30T00:00:00.000",
-        "hedgeFundBuys": 12,
-        "hedgeFundSells": 15,
+        "hedgeFundSignal": "neutral",
+        "hedgeFundNote": "39 institutional holders — stable positioning — 2026-06-30T00:00:00.000",
+        "hedgeFundBuys": 17,
+        "hedgeFundSells": 17,
         "topHedgeFund": "Trilogy Capital Inc.",
         "hasGovContracts": true,
         "govContractNote": "43 contract(s) · $420.4M total — last 12mo",
@@ -49,18 +49,18 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-07T01:20:31.967Z"
+        "lastUpdated": "2026-07-07T15:40:11.335Z"
       },
       "analyst": {
         "available": true,
-        "currentPrice": 132.54,
+        "currentPrice": 135.16,
         "avgTarget": 187.25,
         "highTarget": 230,
         "lowTarget": 138,
         "numAnalysts": 0,
-        "upsidePct": 41.3,
+        "upsidePct": 38.5,
         "signal": "strong_upside",
-        "lastUpdated": "2026-07-07T01:20:32.354Z"
+        "lastUpdated": "2026-07-07T15:40:11.647Z"
       }
     },
     {
@@ -85,7 +85,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.19,
-      "analyzedAt": "2026-07-07T01:20:33.700Z",
+      "analyzedAt": "2026-07-07T15:40:12.983Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -97,10 +97,10 @@
         "insiderSignal": "bullish",
         "insiderNote": "31 open-market purchase(s) vs 27 sale(s) — last 180 days",
         "hedgeFundSignal": "bullish",
-        "hedgeFundNote": "3 fund(s) increasing positions vs 1 decreasing — 2026-06-30T00:00:00.000 · Top: Versant Capital Management, Inc",
-        "hedgeFundBuys": 3,
+        "hedgeFundNote": "5 fund(s) increasing positions vs 1 decreasing — 2026-06-30T00:00:00.000 · Top: CONGRESS ASSET MANAGEMENT CO",
+        "hedgeFundBuys": 5,
         "hedgeFundSells": 1,
-        "topHedgeFund": "Versant Capital Management, Inc",
+        "topHedgeFund": "CONGRESS ASSET MANAGEMENT CO",
         "hasGovContracts": false,
         "govContractNote": "No government contracts found",
         "govContractTotal": 0,
@@ -109,7 +109,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-07T01:20:39.020Z"
+        "lastUpdated": "2026-07-07T15:40:16.942Z"
       },
       "analyst": {
         "available": false,
@@ -138,7 +138,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0,
-      "analyzedAt": "2026-07-07T01:20:40.427Z",
+      "analyzedAt": "2026-07-07T15:40:18.361Z",
       "institutional": {
         "source": "N/A — ETF",
         "available": false,
@@ -150,7 +150,7 @@
         "hedgeFundNote": "ETFs tracked differently",
         "instNote": "ETFs do not have insider or congressional data",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-07T01:20:40.427Z"
+        "lastUpdated": "2026-07-07T15:40:18.362Z"
       },
       "analyst": {
         "available": false,
@@ -163,7 +163,7 @@
       "type": "stock",
       "sector": "Cloud / E-Commerce / AI",
       "sentimentScore": 0,
-      "signal": "NEUTRAL",
+      "signal": "BUY",
       "bullCount": 0,
       "bearCount": 0,
       "neutralCount": 0,
@@ -178,8 +178,8 @@
       "sentimentTrend": "declining",
       "sentimentDelta": 0,
       "arrow": "→",
-      "compositeScore": 0.08,
-      "analyzedAt": "2026-07-07T01:20:41.727Z",
+      "compositeScore": 0.16,
+      "analyzedAt": "2026-07-07T15:40:19.669Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -190,10 +190,10 @@
         "congressSells": 37,
         "insiderSignal": "bearish",
         "insiderNote": "72 open-market sale(s) vs 38 purchase(s) — last 180 days",
-        "hedgeFundSignal": "neutral",
-        "hedgeFundNote": "55 institutional holders — stable positioning — 2026-06-30T00:00:00.000",
-        "hedgeFundBuys": 24,
-        "hedgeFundSells": 24,
+        "hedgeFundSignal": "bullish",
+        "hedgeFundNote": "33 fund(s) increasing positions vs 29 decreasing — 2026-06-30T00:00:00.000 · Top: Global Wealth Strategies & Associates",
+        "hedgeFundBuys": 33,
+        "hedgeFundSells": 29,
         "topHedgeFund": "Global Wealth Strategies & Associates",
         "hasGovContracts": false,
         "govContractNote": "No government contracts found",
@@ -203,18 +203,18 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-07T01:20:45.853Z"
+        "lastUpdated": "2026-07-07T15:40:22.784Z"
       },
       "analyst": {
         "available": true,
-        "currentPrice": 244.16,
+        "currentPrice": 242.79,
         "avgTarget": 308.03,
         "highTarget": 330,
         "lowTarget": 175,
         "numAnalysts": 0,
-        "upsidePct": 26.2,
+        "upsidePct": 26.9,
         "signal": "strong_upside",
-        "lastUpdated": "2026-07-07T01:20:46.262Z"
+        "lastUpdated": "2026-07-07T15:40:23.131Z"
       }
     },
     {
@@ -239,7 +239,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.04,
-      "analyzedAt": "2026-07-07T01:20:47.566Z",
+      "analyzedAt": "2026-07-07T15:40:24.456Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -263,7 +263,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-07T01:20:50.339Z"
+        "lastUpdated": "2026-07-07T15:40:27.244Z"
       },
       "analyst": {
         "available": false,
@@ -292,7 +292,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.05,
-      "analyzedAt": "2026-07-07T01:20:51.820Z",
+      "analyzedAt": "2026-07-07T15:40:28.722Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -316,7 +316,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-07T01:20:55.470Z"
+        "lastUpdated": "2026-07-07T15:40:32.238Z"
       },
       "analyst": {
         "available": false,
@@ -345,7 +345,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.25,
-      "analyzedAt": "2026-07-07T01:20:56.914Z",
+      "analyzedAt": "2026-07-07T15:40:33.673Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -369,7 +369,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-07T01:21:00.357Z"
+        "lastUpdated": "2026-07-07T15:40:36.864Z"
       },
       "analyst": {
         "available": false,
@@ -398,7 +398,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0,
-      "analyzedAt": "2026-07-07T01:21:01.996Z",
+      "analyzedAt": "2026-07-07T15:40:38.489Z",
       "institutional": {
         "source": "N/A — ETF",
         "available": false,
@@ -410,7 +410,7 @@
         "hedgeFundNote": "ETFs tracked differently",
         "instNote": "ETFs do not have insider or congressional data",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-07T01:21:01.996Z"
+        "lastUpdated": "2026-07-07T15:40:38.489Z"
       },
       "analyst": {
         "available": false,
@@ -439,7 +439,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0,
-      "analyzedAt": "2026-07-07T01:21:03.319Z",
+      "analyzedAt": "2026-07-07T15:40:39.790Z",
       "institutional": {
         "source": "N/A — ETF",
         "available": false,
@@ -451,7 +451,7 @@
         "hedgeFundNote": "ETFs tracked differently",
         "instNote": "ETFs do not have insider or congressional data",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-07T01:21:03.319Z"
+        "lastUpdated": "2026-07-07T15:40:39.790Z"
       },
       "analyst": {
         "available": false,
@@ -480,7 +480,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0,
-      "analyzedAt": "2026-07-07T01:21:04.631Z",
+      "analyzedAt": "2026-07-07T15:40:41.095Z",
       "institutional": {
         "source": "N/A — ETF",
         "available": false,
@@ -492,7 +492,7 @@
         "hedgeFundNote": "ETFs tracked differently",
         "instNote": "ETFs do not have insider or congressional data",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-07T01:21:04.631Z"
+        "lastUpdated": "2026-07-07T15:40:41.095Z"
       },
       "analyst": {
         "available": false,
@@ -521,7 +521,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.14,
-      "analyzedAt": "2026-07-07T01:21:05.933Z",
+      "analyzedAt": "2026-07-07T15:40:42.417Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -533,9 +533,9 @@
         "insiderSignal": "bearish",
         "insiderNote": "43 open-market sale(s) vs 9 purchase(s) — last 180 days",
         "hedgeFundSignal": "bullish",
-        "hedgeFundNote": "21 fund(s) increasing positions vs 15 decreasing — 2026-06-30T00:00:00.000 · Top: CX Institutional",
-        "hedgeFundBuys": 21,
-        "hedgeFundSells": 15,
+        "hedgeFundNote": "27 fund(s) increasing positions vs 16 decreasing — 2026-06-30T00:00:00.000 · Top: CX Institutional",
+        "hedgeFundBuys": 27,
+        "hedgeFundSells": 16,
         "topHedgeFund": "CX Institutional",
         "hasGovContracts": false,
         "govContractNote": "No government contracts found",
@@ -545,18 +545,18 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-07T01:21:10.189Z"
+        "lastUpdated": "2026-07-07T15:40:45.812Z"
       },
       "analyst": {
         "available": true,
-        "currentPrice": 419.77,
-        "avgTarget": 443.7,
+        "currentPrice": 404.93,
+        "avgTarget": 457.3,
         "highTarget": 540,
         "lowTarget": 360,
         "numAnalysts": 0,
-        "upsidePct": 5.7,
+        "upsidePct": 12.9,
         "signal": "upside",
-        "lastUpdated": "2026-07-07T01:21:10.519Z"
+        "lastUpdated": "2026-07-07T15:40:46.056Z"
       }
     },
     {
@@ -581,7 +581,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0,
-      "analyzedAt": "2026-07-07T01:21:11.881Z",
+      "analyzedAt": "2026-07-07T15:40:47.403Z",
       "institutional": {
         "source": "N/A — ETF",
         "available": false,
@@ -593,7 +593,7 @@
         "hedgeFundNote": "ETFs tracked differently",
         "instNote": "ETFs do not have insider or congressional data",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-07T01:21:11.881Z"
+        "lastUpdated": "2026-07-07T15:40:47.403Z"
       },
       "analyst": {
         "available": false,
@@ -621,21 +621,21 @@
       "sentimentTrend": "stable",
       "sentimentDelta": 0,
       "arrow": "→",
-      "compositeScore": -0.11,
-      "analyzedAt": "2026-07-07T01:21:13.183Z",
+      "compositeScore": 0.05,
+      "analyzedAt": "2026-07-07T15:40:48.716Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
-        "instSentiment": "bearish",
+        "instSentiment": "bullish",
         "congressSignal": "neutral",
         "congressNote": "8 congressional trade(s) — mixed signal",
         "congressBuys": 4,
         "congressSells": 4,
         "insiderSignal": "bearish",
         "insiderNote": "27 open-market sale(s) vs 21 purchase(s) — last 180 days",
-        "hedgeFundSignal": "bearish",
-        "hedgeFundNote": "4 fund(s) reducing positions vs 3 increasing — 2026-06-30T00:00:00.000",
-        "hedgeFundBuys": 3,
+        "hedgeFundSignal": "bullish",
+        "hedgeFundNote": "5 fund(s) increasing positions vs 4 decreasing — 2026-06-30T00:00:00.000 · Top: CX Institutional",
+        "hedgeFundBuys": 5,
         "hedgeFundSells": 4,
         "topHedgeFund": "CX Institutional",
         "hasGovContracts": false,
@@ -646,7 +646,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-07T01:21:17.184Z"
+        "lastUpdated": "2026-07-07T15:40:52.943Z"
       },
       "analyst": {
         "available": false,
@@ -675,7 +675,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.03,
-      "analyzedAt": "2026-07-07T01:21:18.707Z",
+      "analyzedAt": "2026-07-07T15:40:54.376Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -687,10 +687,10 @@
         "insiderSignal": "bullish",
         "insiderNote": "11 open-market purchase(s) vs 3 sale(s) — last 180 days",
         "hedgeFundSignal": "bearish",
-        "hedgeFundNote": "3 fund(s) reducing positions vs 1 increasing — 2026-06-30T00:00:00.000",
-        "hedgeFundBuys": 1,
-        "hedgeFundSells": 3,
-        "topHedgeFund": "Versant Capital Management, Inc",
+        "hedgeFundNote": "4 fund(s) reducing positions vs 3 increasing — 2026-06-30T00:00:00.000",
+        "hedgeFundBuys": 3,
+        "hedgeFundSells": 4,
+        "topHedgeFund": "HOWARD FINANCIAL SERVICES, LTD.",
         "hasGovContracts": false,
         "govContractNote": "No government contracts found",
         "govContractTotal": 0,
@@ -699,7 +699,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q3 2026",
-        "lastUpdated": "2026-07-07T01:21:21.937Z"
+        "lastUpdated": "2026-07-07T15:40:57.409Z"
       },
       "analyst": {
         "available": false,
