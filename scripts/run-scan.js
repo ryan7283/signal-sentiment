@@ -552,7 +552,9 @@ async function fetchAnalystData(ticker, type) {
 
     const t = targetData[0];
 
-    // Validate confirmed field names
+    // Confirmed fields from FMP price-target-consensus:
+    // targetHigh, targetLow, targetMedian, targetConsensus
+    // NOTE: analyst count is NOT in this endpoint — it's in price-target-summary
     if (t.targetConsensus === undefined && t.targetMedian === undefined) {
       console.log(`  [${ticker}] FMP targets: unexpected fields. Got: ${Object.keys(t).join(", ")}`);
       return { available: false, note: "FMP response format changed" };
@@ -561,12 +563,27 @@ async function fetchAnalystData(ticker, type) {
     const avgTarget  = parseFloat(getField(t, "targetConsensus", "targetMedian") || 0);
     const highTarget = parseFloat(getField(t, "targetHigh") || 0);
     const lowTarget  = parseFloat(getField(t, "targetLow")  || 0);
-    // Note: price-target-consensus endpoint does not return analyst count — use 0 if unavailable
-    const numAnalysts = parseInt(getField(t, "numAnalysts", "numberOfAnalysts", "analysts") || 0);
 
     if (!avgTarget) {
       return { available: false, note: "No consensus price target available" };
     }
+
+    // Get analyst count from price-target-summary (separate endpoint, same free tier)
+    let numAnalysts = 0;
+    try {
+      await sleep(300);
+      const summaryRes = await fmpFetch(
+        `https://financialmodelingprep.com/stable/price-target-summary?symbol=${ticker}&apikey=${apiKey}`
+      );
+      if (summaryRes.ok) {
+        const summaryData = await summaryRes.json();
+        if (Array.isArray(summaryData) && summaryData.length > 0) {
+          // price-target-summary fields: lastMonth.numOfAnalysts, lastQuarter.numOfAnalysts
+          const latest = summaryData[0].lastMonth || summaryData[0].lastQuarter || summaryData[0];
+          numAnalysts = parseInt(getField(latest, "numOfAnalysts", "numberOfAnalysts", "numAnalysts") || 0);
+        }
+      }
+    } catch(e) { /* non-fatal — analyst count just won't show */ }
 
     const upsidePct = parseFloat(((avgTarget - currentPrice) / currentPrice * 100).toFixed(1));
 
@@ -672,6 +689,87 @@ Return exactly this JSON:
   };
 }
 
+// ─── VIX VOLATILITY INDEX ─────────────────────────────────────────────────────
+// Source: CBOE official daily CSV — free, no API key, no rate limit
+// URL: https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv
+// Format: DATE,OPEN,HIGH,LOW,CLOSE  (most recent row = today/yesterday)
+// Also try FMP /stable/quote?symbol=%5EVIX as fallback (uses existing FMP key)
+
+async function fetchVIX(fmpApiKey) {
+  let vixValue = null;
+
+  // Primary: CBOE official CSV — most authoritative source, always free
+  try {
+    const res = await fetch("https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv");
+    if (res.ok) {
+      const csv = await res.text();
+      const lines = csv.trim().split("\n").filter(l => l.trim());
+      // Last line = most recent trading day
+      const last = lines[lines.length - 1].split(",");
+      const close = parseFloat(last[4]); // CLOSE is 5th column
+      if (close > 0) {
+        vixValue = close;
+        console.log(`  VIX: ${vixValue} (source: CBOE CSV)`);
+      }
+    } else {
+      console.log(`  VIX CBOE: HTTP ${res.status}`);
+    }
+  } catch (e) {
+    console.log(`  VIX CBOE error: ${e.message}`);
+  }
+
+  // Fallback: FMP quote for ^VIX (uses existing FMP key, 1 extra call)
+  if (!vixValue && fmpApiKey) {
+    try {
+      await sleep(300);
+      const res = await fetch(
+        `https://financialmodelingprep.com/stable/quote?symbol=%5EVIX&apikey=${fmpApiKey}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0 && data[0].price) {
+          vixValue = parseFloat(data[0].price);
+          console.log(`  VIX: ${vixValue} (source: FMP fallback)`);
+        }
+      } else {
+        console.log(`  VIX FMP fallback: HTTP ${res.status}`);
+      }
+    } catch (e) {
+      console.log(`  VIX FMP error: ${e.message}`);
+    }
+  }
+
+  if (!vixValue) {
+    console.log("  VIX: unavailable");
+    return null;
+  }
+
+  // Classify VIX into zones
+  const zone = vixValue < 15   ? "low"
+              : vixValue < 20   ? "normal"
+              : vixValue < 25   ? "elevated"
+              : vixValue < 30   ? "high"
+              : vixValue < 40   ? "extreme"
+              : "crisis";
+
+  const label = vixValue < 15   ? "CALM"
+              : vixValue < 20   ? "NORMAL"
+              : vixValue < 25   ? "CAUTION"
+              : vixValue < 30   ? "ELEVATED"
+              : vixValue < 40   ? "HIGH FEAR"
+              : "CRISIS";
+
+  const advice = vixValue < 15   ? "Low volatility — risk-on environment, growth positions favored"
+               : vixValue < 20   ? "Normal market — maintain current allocations"
+               : vixValue < 25   ? "Elevated uncertainty — consider trimming highest-beta positions"
+               : vixValue < 30   ? "High stress — reduce AI/speculative exposure, increase defensive ETF allocation"
+               : vixValue < 40   ? "Fear environment — significantly reduce risk, raise cash or rotate to stable ETFs"
+               : "Crisis level — maximum caution, protect capital first";
+
+  return { value: vixValue, zone, label, advice };
+}
+
+
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -686,6 +784,14 @@ async function main() {
 
   fs.mkdirSync("data",         { recursive: true });
   fs.mkdirSync("data/history", { recursive: true });
+  fs.mkdirSync("data/tweet-cache", { recursive: true });
+
+  // Fetch VIX before scanning tickers
+  console.log("📈 Fetching VIX...");
+  const vix = await fetchVIX(process.env.FMP_API_KEY);
+  if (vix) {
+    console.log(`   VIX ${vix.value} — ${vix.label}: ${vix.advice}\n`);
+  }
 
   const yesterday = loadYesterdayResults();
   const results   = [];
@@ -741,6 +847,7 @@ async function main() {
     generatedAt: new Date().toISOString(),
     tickerCount: results.length,
     version:     "9.0",
+    vix,
     results,
   };
 
@@ -749,6 +856,7 @@ async function main() {
   fs.writeFileSync(`data/history/${dateStr}.json`, JSON.stringify(output, null, 2));
 
   console.log("\n📊 Summary:");
+  if (vix) console.log(`   VIX ${vix.value} — ${vix.label}`);
   results.forEach(r => {
     const tag      = r.type === "etf" ? "[ETF]" : "[STK]";
     const instStr  = r.institutional?.available ? `inst:${r.institutional.instSentiment}` : "inst:inactive";
