@@ -494,7 +494,7 @@ async function fetchAnalystData(ticker, type) {
     async function fmpFetch(url) {
       let res = await fetch(url);
       if (res.status === 429 || res.status === 402) {
-        await sleep(2000); // wait 2s and retry once
+        await sleep(5000); // wait 5s and retry once on rate limit
         res = await fetch(url);
       }
       return res;
@@ -526,7 +526,7 @@ async function fetchAnalystData(ticker, type) {
       return { available: false, note: `FMP price unavailable` };
     }
 
-    await sleep(500); // increased delay to avoid rate limiting
+    await sleep(1500); // delay between quote and consensus calls
 
     // Step 2: Get analyst price target consensus
     // Confirmed free endpoint: /stable/price-target-consensus?symbol={ticker}
@@ -813,6 +813,7 @@ async function main() {
 
     const analyst = await fetchAnalystData(ticker, type || "stock");
     process.stdout.write(` done\n`);
+    await sleep(2000); // pause between tickers to avoid FMP rate limits
 
     // Composite: sentiment (60% * confidence) + trend (10%) + hf (8%) + insider (7%) + congress (6%) + offex (4%) + analyst (5%)
     const b = s => s === "bullish" ? 1 : s === "bearish" ? -1 : 0;
