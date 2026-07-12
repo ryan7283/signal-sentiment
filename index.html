@@ -654,6 +654,37 @@
     .setup-banner { flex-direction: column; }
   }
 
+  /* ── VIX METER ── */
+  .vix-banner {
+    background: #0f0f0f;
+    border: 1px solid #1e1e1e;
+    border-radius: 10px;
+    padding: 14px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .vix-label { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+  .vix-value { font-family: 'IBM Plex Mono', monospace; font-size: 28px; font-weight: 700; line-height: 1; }
+  .vix-zone  { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 6px; letter-spacing: 0.05em; }
+  .vix-advice { font-size: 12px; color: #94a3b8; flex: 1; min-width: 200px; }
+  .vix-track  { flex: 1; min-width: 160px; max-width: 260px; height: 6px; background: linear-gradient(to right, #22c55e, #eab308, #f97316, #ef4444, #7f1d1d); border-radius: 3px; position: relative; }
+  .vix-needle { position: absolute; top: -4px; width: 3px; height: 14px; background: white; border-radius: 2px; transform: translateX(-50%); }
+  .vix-low      { color: #4ade80; }
+  .vix-normal   { color: #86efac; }
+  .vix-elevated { color: #fde047; }
+  .vix-high     { color: #fb923c; }
+  .vix-extreme  { color: #ef4444; }
+  .vix-crisis   { color: #dc2626; }
+  .zone-low      { background: #052e16; color: #4ade80; border: 1px solid #14532d; }
+  .zone-normal   { background: #052e16; color: #86efac; border: 1px solid #166534; }
+  .zone-elevated { background: #422006; color: #fde047; border: 1px solid #713f12; }
+  .zone-high     { background: #431407; color: #fb923c; border: 1px solid #7c2d12; }
+  .zone-extreme  { background: #3b0000; color: #ef4444; border: 1px solid #7f1d1d; }
+  .zone-crisis   { background: #450a0a; color: #dc2626; border: 1px solid #991b1b; }
+
   /* ── ANALYST TARGET PILL ── */
   .target-pill {
     display: inline-flex;
@@ -847,20 +878,20 @@ async function loadWatchlistFromGitHub() {
   } catch(e) {
     console.warn('Could not load watchlist from GitHub, using defaults:', e.message);
     WATCHLIST = [
-      { ticker: 'PLTR', name: 'Palantir Technologies', type: 'stock' },
-      { ticker: 'AFRM', name: 'Affirm Holdings', type: 'stock' },
-      { ticker: 'IBIT', name: 'iShares Bitcoin ETF', type: 'etf' },
-      { ticker: 'AMZN', name: 'Amazon', type: 'stock' },
-      { ticker: 'KEEL', name: 'Keelvar', type: 'stock' },
-      { ticker: 'APLD', name: 'Applied Digital', type: 'stock' },
-      { ticker: 'IREN', name: 'Iris Energy', type: 'stock' },
-      { ticker: 'FOTO', name: 'FOTO ETF', type: 'etf' },
-      { ticker: 'NASA', name: 'Procure Space ETF', type: 'etf' },
-      { ticker: 'AIPO', name: 'AI Powered IPO ETF', type: 'etf' },
-      { ticker: 'TSLA', name: 'Tesla', type: 'stock' },
-      { ticker: 'CIBR', name: 'First Trust Cybersecurity ETF', type: 'etf' },
-      { ticker: 'VST',  name: 'Vistra Corp', type: 'stock' },
-      { ticker: 'QXO',  name: 'QXO Inc', type: 'stock' },
+      { ticker: 'PLTR',  name: 'Palantir Technologies',         type: 'stock', sector: 'AI Software & Defense Tech' },
+      { ticker: 'IREN',  name: 'Iris Energy',                   type: 'stock', sector: 'AI Infrastructure & Bitcoin Mining' },
+      { ticker: 'KEEL',  name: 'Keelvar',                       type: 'stock', sector: 'AI Supply Chain Software' },
+      { ticker: 'CRWD',  name: 'CrowdStrike Holdings',          type: 'stock', sector: 'Cybersecurity' },
+      { ticker: 'AMZN',  name: 'Amazon',                        type: 'stock', sector: 'E-Commerce & Cloud' },
+      { ticker: 'OPEN',  name: 'Opendoor Technologies',         type: 'stock', sector: 'PropTech & Real Estate AI' },
+      { ticker: 'QXO',   name: 'QXO Inc',                       type: 'stock', sector: 'Building Products Distribution' },
+      { ticker: 'APLD',  name: 'Applied Digital',               type: 'stock', sector: 'AI Infrastructure & HPC' },
+      { ticker: 'AIPO',  name: 'AI Powered Equity ETF',         type: 'etf',   sector: 'AI-Powered Equity ETF' },
+      { ticker: 'QQQM',  name: 'Invesco Nasdaq-100 ETF',        type: 'etf',   sector: 'Mega-Cap Tech ETF' },
+      { ticker: 'IBIT',  name: 'iShares Bitcoin ETF',           type: 'etf',   sector: 'Bitcoin ETF' },
+      { ticker: 'ARKQ',  name: 'ARK Autonomous Technology ETF', type: 'etf',   sector: 'Autonomous Technology & Robotics ETF' },
+      { ticker: 'FOTO',  name: 'FOTO ETF',                      type: 'etf',   sector: 'Photography & Imaging ETF' },
+      { ticker: 'NASA',  name: 'Procure Space ETF',             type: 'etf',   sector: 'Space Industry ETF' },
     ];
   }
 }
@@ -931,6 +962,7 @@ async function loadGitHubResults() {
     if (data.results && data.results.length > 0) {
       data.results.forEach(r => { results[r.ticker] = r; });
       dataSource = 'github';
+      renderVIXBanner(data.vix);
       const d = new Date(data.generatedAt);
       document.getElementById('lastUpdated').textContent =
         'Last scan: ' + d.toLocaleDateString('en-US', { month:'short', day:'numeric' }) +
@@ -1003,6 +1035,38 @@ async function searchTicker() {
   document.getElementById('searchBtn').disabled = false;
   document.getElementById('searchBtn').textContent = 'Analyze →';
   document.getElementById('searchInput').value = '';
+}
+
+function renderVIXBanner(vix) {
+  // Store vix globally for inline rendering
+  window._vixData = vix;
+  const el = document.getElementById('vixBanner');
+  if (!el) return;
+  if (!vix || !vix.value) {
+    el.style.display = 'none';
+    return;
+  }
+  // Needle position: VIX 0-50 maps to 0-100%, capped
+  const pct = Math.min(Math.max((vix.value / 50) * 100, 2), 98);
+  el.innerHTML = '<div>'
+    + '<div class="vix-label">VIX — Fear & Greed</div>'
+    + '<div class="vix-value vix-' + vix.zone + '">' + vix.value.toFixed(1) + '</div>'
+    + '</div>'
+    + '<span class="vix-zone zone-' + vix.zone + '">' + vix.label + '</span>'
+    + '<div class="vix-track"><div class="vix-needle" style="left:' + pct + '%"></div></div>'
+    + '<div class="vix-advice">' + vix.advice + '</div>';
+}
+
+function renderVIXBannerInline() {
+  const vix = window._vixData;
+  if (!vix || !vix.value) return '';
+  const pct = Math.min(Math.max((vix.value / 50) * 100, 2), 98);
+  return '<div class="vix-banner">'
+    + '<div><div class="vix-label">VIX — Fear Gauge</div><div class="vix-value vix-' + vix.zone + '">' + vix.value.toFixed(1) + '</div></div>'
+    + '<span class="vix-zone zone-' + vix.zone + '">' + vix.label + '</span>'
+    + '<div class="vix-track"><div class="vix-needle" style="left:' + pct + '%"></div></div>'
+    + '<div class="vix-advice">' + vix.advice + '</div>'
+    + '</div>';
 }
 
 async function runAll() {
@@ -1084,15 +1148,16 @@ function renderOverview() {
     <div class="setup-banner">
       <div class="setup-banner-text">
         <h4>📡 Live data not connected — showing demo mode</h4>
-        <p>Your daily scan results will appear here automatically once you complete GitHub setup. Sample data is shown below so you can see how the dashboard looks.</p>
+        <p>Your daily scan results will appear here automatically once you complete GitHub setup.</p>
       </div>
       <div class="setup-steps">
         <span class="setup-step">1. Upload files to GitHub</span>
         <span class="setup-step">2. Add API keys to Secrets</span>
         <span class="setup-step">3. Run first scan</span>
-        <span class="setup-step">4. Update GITHUB_USER in index.html</span>
       </div>
     </div>` : '';
+
+  const vixHtml = (typeof renderVIXBannerInline === 'function') ? renderVIXBannerInline() : '';
 
   const stats = `
     <div class="stats">
@@ -1116,8 +1181,9 @@ function renderOverview() {
 
   const cards = WATCHLIST.map(({ticker, name}) => renderCard(ticker, name)).join('');
 
-  return banner + stats + `<div class="grid">${cards}</div>`;
+  return banner + vixHtml + stats + `<div class="grid">${cards}</div>`;
 }
+
 
 function renderCard(ticker, name) {
   const r = results[ticker];
@@ -1190,7 +1256,7 @@ function renderCard(ticker, name) {
         return `<div class="inst-row">${instChip}${insiderChip}${congress}${hf}${gov}</div>
         <div style="font-size:9px;color:var(--muted);margin-top:4px">${instData.quarterCovered||''} · Quiver Quant</div>`;
       })() : ''}
-      ${r.analyst && r.analyst.available ? ('<div style="margin-top:8px;display:flex;align-items:center;gap:6px"><span class="target-pill ' + (r.analyst.signal === 'strong_upside' || r.analyst.signal === 'upside' ? 'target-upside' : r.analyst.signal === 'strong_downside' || r.analyst.signal === 'downside' ? 'target-downside' : 'target-neutral') + '">' + (r.analyst.upsidePct > 0 ? '▲ +' : r.analyst.upsidePct < 0 ? '▼ ' : '→ ') + r.analyst.upsidePct + '% vs analyst target</span><span style="font-size:9px;color:var(--muted)">$' + r.analyst.currentPrice + ' → $' + r.analyst.avgTarget + ' (' + r.analyst.numAnalysts + ' analysts)</span></div>') : ''}`;
+      ${r.analyst && r.analyst.available ? ('<div style="margin-top:8px;display:flex;align-items:center;gap:6px"><span class="target-pill ' + (r.analyst.signal === 'strong_upside' || r.analyst.signal === 'upside' ? 'target-upside' : r.analyst.signal === 'strong_downside' || r.analyst.signal === 'downside' ? 'target-downside' : 'target-neutral') + '">' + (r.analyst.upsidePct > 0 ? '▲ +' : r.analyst.upsidePct < 0 ? '▼ ' : '→ ') + r.analyst.upsidePct + '% vs analyst target</span><span style="font-size:9px;color:var(--muted)">$' + r.analyst.currentPrice + ' → $' + r.analyst.avgTarget + (r.analyst.numAnalysts > 0 ? ' (' + r.analyst.numAnalysts + ' analysts)' : '') + '</span></div>') : ''}`;
   } else {
     const hasSample = !!SAMPLE_POSTS[ticker];
     body = `
@@ -1294,7 +1360,7 @@ function renderDetail(ticker) {
         + '<div><div class="box-label">Current Price</div><div class="box-val">$' + a.currentPrice + '</div></div>'
         + '<div><div class="box-label">Avg Target</div><div class="box-val">$' + a.avgTarget + '</div></div>'
         + '<div><div class="box-label">Upside/Down</div><div class="box-val" style="color:' + aColor + '">' + sign + a.upsidePct + '%</div></div>'
-        + '<div><div class="box-label">Analysts</div><div class="box-val">' + a.numAnalysts + '</div></div>'
+        + '<div><div class="box-label">Analysts</div><div class="box-val">' + (a.numAnalysts > 0 ? a.numAnalysts : 'N/A') + '</div></div>'
         + '</div>'
         + '<div style="font-size:11px;color:#64748b">Range: $' + a.lowTarget + ' – $' + a.highTarget + ' · ' + sign + a.upsidePct + '% to consensus</div>'
         + '</div>';
@@ -1463,55 +1529,20 @@ function renderLog() {
 
 // ── SAMPLE POSTS (used for demo + individual analyze) ─────────────────────
 const SAMPLE_POSTS = {
-  IREN: [
-    '$IREN just signed another massive HPC contract. Pick-and-shovel play for AI infrastructure. Accumulating hard.',
-    'Iris Energy pivoting perfectly from BTC mining to AI compute. $IREN balance sheet looks clean, management executing.',
-    '$IREN down 8% today on no news. Shaking out weak hands before next leg up. Adding.',
-    'Anyone watching $IREN? Power capacity is the real moat here. Grid access is brutal to get.',
-    '$IREN disappointing quarter. Revenue missed. Starting to question the AI pivot thesis.',
-  ],
-  PLTR: [
-    '$PLTR AIP is genuinely different. Enterprises deploying faster than anything in 10 years.',
-    'Palantir government contracts are a moat nobody else can touch. $PLTR is a buy under $40.',
-    '$PLTR valuation is insane. 30x revenue for 20% growth? Hard pass.',
-    'Alex Karp said something that made me rethink $PLTR. This is a defense intelligence company, not software.',
-    '$PLTR added to S&P 500. Institutions forced to buy. Supply/demand strongly favors bulls.',
-  ],
-  CRWD: [
-    '$CRWD Falcon platform wins accelerating. Every Fortune 500 I talk to is consolidating on CrowdStrike.',
-    'July 2024 outage is ancient history. $CRWD customer retention above 95%. This thing is a juggernaut.',
-    '$CRWD growing ARR 30%+ with Rule of 60. Best-in-class cybersecurity at scale.',
-    'SentinelOne gaining share on $CRWD in mid-market. Watch the NRR trend.',
-    '$CRWD beat and raise. Federal momentum accelerating. Adding here.',
-  ],
-  TSLA: [
-    '$TSLA Optimus is the sleeper catalyst nobody is modeling. 1M humanoid robots by 2030 is conservative.',
-    'Tesla energy storage alone is worth more than the market cap. $TSLA massively undervalued.',
-    '$TSLA losing EV share to BYD in China and Europe. Brand damage from Elon is real.',
-    'FSD v12 is legitimately impressive. $TSLA autonomous revenue closer than bears think.',
-    '$TSLA margins compressing. Price cuts are not a growth strategy. Starting to trim.',
-  ],
-  AFRM: [
-    '$AFRM BNPL taking wallet share from credit cards faster than expected. GMV growth is the story.',
-    'Affirm Shopify and Apple Pay integrations give $AFRM distribution no competitor can replicate.',
-    '$AFRM unit economics finally working. Loss rates normalizing.',
-    'Rising rates are structural headwind for $AFRM. Cost of capital goes up every Fed hike.',
-    '$AFRM delinquencies trending up. BNPL gets stress-tested in a slowdown.',
-  ],
-  APLD: [
-    '$APLD just announced 400MW AI data center capacity. Dark horse neocloud play.',
-    'Applied Digital margins improving QoQ. $APLD executing on HPC buildout.',
-    '$APLD balance sheet concerns me. Heavy capex with thin revenue coverage.',
-    'AI data center land grab is real. $APLD has power contracts that matter.',
-    '$APLD management credibility improving. Last two quarters show operational discipline.',
-  ],
-  IBIT: [
-    '$IBIT hitting record inflows again. Institutional bitcoin demand is structural.',
-    'BlackRock $IBIT fastest growing ETF in history. That is institutions allocating.',
-    '$IBIT selling off with risk assets. Correlation to QQQ remains high.',
-    'Corporate treasuries adding $IBIT exposure. MicroStrategy playbook going mainstream.',
-    '$IBIT options volume exploding. Market makers hedging something big.',
-  ],
+  PLTR:  [`$PLTR AI sovereignty play — government contracts accelerating`, `Palantir's DOGE exposure is a catalyst, not a risk`, `$PLTR 52-week breakout incoming, AIP platform adoption surging`],
+  IREN:  [`$IREN 1.4GW Australian data center deal is transformational`, `Iris Energy pivoting perfectly from mining to AI compute`, `$IREN Anthropic partnership speculation driving momentum`],
+  KEEL:  [`$KEEL supply chain AI is undervalued vs peers`, `Keelvar enterprise deals accelerating in Q2`, `$KEEL bullish on procurement AI demand cycle`],
+  CRWD:  [`$CRWD best in class cybersecurity, post-outage recovery complete`, `CrowdStrike Falcon platform market share gains continuing`, `$CRWD AI-native security moat getting stronger`],
+  AMZN:  [`$AMZN AWS hyperscaler dominance in AI infrastructure`, `Amazon robotics deployment at scale — operational leverage incoming`, `$AMZN FTC settlement cleared overhang, re-rate incoming`],
+  OPEN:  [`$OPEN Opendoor AI pricing engine improving margins`, `Real estate AI play — housing market recovery would be massive catalyst`, `$OPEN balance sheet risk but optionality at these levels`],
+  QXO:   [`$QXO Brad Jacobs doing it again — building materials distribution roll-up`, `QXO acquisition strategy following same playbook as XPO`, `$QXO undervalued relative to long-term roll-up potential`],
+  APLD:  [`$APLD 810MW META hyperscaler deal validates the thesis`, `Applied Digital contracted backlog predominantly investment-grade`, `$APLD 98% YoY Q2 revenue growth — AI infrastructure demand real`],
+  AIPO:  [`$AIPO AI-powered portfolio construction outperforming benchmarks`, `AIPO ETF adding exposure to AI infrastructure names`, `AI Powered Equity ETF rebalancing toward physical AI theme`],
+  QQQM:  [`$QQQM Nasdaq-100 mega-cap AI exposure at low cost`, `QQQM consolidating after tech rally — dip buying interest`, `$QQQM core holding for AI infrastructure basket exposure`],
+  IBIT:  [`$IBIT BlackRock Bitcoin ETF AUM now $45B — institutional adoption real`, `Bitcoin bottoming narrative driving ETF accumulation`, `$IBIT DCA into weakness — long-dated calls attracting interest`],
+  ARKQ:  [`$ARKQ autonomous vehicle and robotics names accelerating`, `ARK Autonomous ETF adding Rocket Lab and defense AI positions`, `$ARKQ physical AI theme driving outperformance vs QQQ`],
+  FOTO:  [`$FOTO photography ETF — lifestyle and travel content driving flows`, `FOTO ETF low volume but steady accumulation`, `$FOTO niche ETF gaining attention from travel sector bulls`],
+  NASA:  [`$NASA Procure Space ETF — satellite and launch demand surging`, `Space infrastructure ETF gaining from Starlink and RKLB momentum`, `$NASA defense space budget increases benefiting holdings`],
 };
 
 // ── TICKER MODAL ──────────────────────────────────────────────────────────
@@ -1593,31 +1624,5 @@ function promptGitHubToken() {
 }
 
 </script>
-
-<!-- ═══════════════════════════════════════════════ TICKER MODAL -->
-<div class="modal-overlay" id="tickerModal" onclick="if(event.target===this)closeTickerModal()">
-  <div class="modal">
-    <h3>Manage Watchlist</h3>
-    <p>Add any ticker below. Changes save automatically to your GitHub repo and persist across all sessions.</p>
-    <div class="modal-row" style="flex-wrap:wrap;gap:8px">
-      <input class="modal-input" id="newTickerInput" placeholder="TICKER" maxlength="10" style="max-width:100px"
-        onkeydown="if(event.key==='Enter')addTickerFromModal()"/>
-      <input class="modal-input" id="newTickerName" placeholder="Company / ETF name" maxlength="40" style="text-transform:none;flex:1"
-        onkeydown="if(event.key==='Enter')addTickerFromModal()"/>
-      <select id="newTickerType" style="background:#0c1220;border:1px solid #1f2937;color:#fff;padding:9px 10px;border-radius:6px;font-size:12px;outline:none">
-        <option value="stock">Stock</option>
-        <option value="etf">ETF</option>
-      </select>
-      <button class="btn" onclick="addTickerFromModal()" style="padding:9px 14px">Add</button>
-    </div>
-    <div class="modal-ticker-list" id="modalTickerList"></div>
-    <div class="modal-footer">
-      <button class="btn-ghost" id="saveWatchlistBtn" onclick="saveWatchlistToGitHub().then(ok=>alert(ok?'Saved!':'Failed — check token'))">Save to GitHub</button>
-      <button class="btn-ghost" onclick="promptGitHubToken()">⚙ Token</button>
-      <button class="btn-ghost" onclick="closeTickerModal()">Done</button>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
