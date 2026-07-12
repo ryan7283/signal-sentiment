@@ -16,10 +16,10 @@
     },
     {
       "ticker": "KEEL",
-      "name": "Keelvar",
+      "name": "Keel Infrastructure Corp",
       "type": "stock",
-      "sector": "AI Supply Chain Software",
-      "query": "($KEEL OR #KEEL OR \"Keelvar\") -is:retweet lang:en"
+      "sector": "AI Data Centers & HPC Infrastructure",
+      "query": "($KEEL OR #KEEL OR \"Keel Infrastructure\" OR \"Bitfarms\") -is:retweet lang:en"
     },
     {
       "ticker": "CRWD",
