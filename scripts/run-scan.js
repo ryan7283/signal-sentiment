@@ -158,9 +158,30 @@ async function fetchTweets(ticker, query) {
   }
 
   if (tweets === null) {
-    console.error(`  [${ticker}] Twitter fetch failed after retry — returning 0 posts`);
+    // Twitter quota depleted — try to reuse yesterday's cached tweets to avoid wasting a run
+    const cachePath = `data/tweet-cache/${ticker}.json`;
+    try {
+      if (fs.existsSync(cachePath)) {
+        const cached = JSON.parse(fs.readFileSync(cachePath, "utf8"));
+        const cacheAge = (Date.now() - new Date(cached.savedAt).getTime()) / (1000 * 60 * 60);
+        if (cacheAge < 48) { // use cache if under 48 hours old
+          console.log(`  [${ticker}] Using cached tweets from ${cacheAge.toFixed(1)}h ago (Twitter quota depleted)`);
+          return cached.tweets || [];
+        }
+      }
+    } catch (e) { /* cache miss is fine */ }
+    console.error(`  [${ticker}] Twitter fetch failed — no cache available, returning 0 posts`);
     return [];
   }
+
+  // Save tweets to cache for reuse if quota is depleted later
+  try {
+    fs.mkdirSync("data/tweet-cache", { recursive: true });
+    fs.writeFileSync(
+      `data/tweet-cache/${ticker}.json`,
+      JSON.stringify({ ticker, tweets, savedAt: new Date().toISOString() })
+    );
+  } catch (e) { /* cache write failure is non-fatal */ }
 
   return tweets;
 }
@@ -469,8 +490,17 @@ async function fetchAnalystData(ticker, type) {
   }
 
   try {
-    // Step 1: Get current stock price from FMP stable quote endpoint
-    const quoteRes = await fetch(
+    // Step 1: Get current stock price — retry once on 429/402 rate limit
+    async function fmpFetch(url) {
+      let res = await fetch(url);
+      if (res.status === 429 || res.status === 402) {
+        await sleep(2000); // wait 2s and retry once
+        res = await fetch(url);
+      }
+      return res;
+    }
+
+    const quoteRes = await fmpFetch(
       `https://financialmodelingprep.com/stable/quote?symbol=${ticker}&apikey=${apiKey}`
     );
 
@@ -489,18 +519,19 @@ async function fetchAnalystData(ticker, type) {
       }
     } else {
       console.log(`  [${ticker}] FMP quote: ${quoteRes.status}`);
+      return { available: false, note: `FMP quote returned ${quoteRes.status}` };
     }
 
     if (!currentPrice) {
       return { available: false, note: `FMP price unavailable` };
     }
 
-    await sleep(200);
+    await sleep(500); // increased delay to avoid rate limiting
 
     // Step 2: Get analyst price target consensus
     // Confirmed free endpoint: /stable/price-target-consensus?symbol={ticker}
     // Fields: targetHigh, targetLow, targetMedian, targetConsensus
-    const targetRes = await fetch(
+    const targetRes = await fmpFetch(
       `https://financialmodelingprep.com/stable/price-target-consensus?symbol=${ticker}&apikey=${apiKey}`
     );
 
