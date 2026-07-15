@@ -878,20 +878,21 @@ async function loadWatchlistFromGitHub() {
   } catch(e) {
     console.warn('Could not load watchlist from GitHub, using defaults:', e.message);
     WATCHLIST = [
-      { ticker: 'PLTR',  name: 'Palantir Technologies',         type: 'stock', sector: 'AI Software & Defense Tech' },
-      { ticker: 'IREN',  name: 'Iris Energy',                   type: 'stock', sector: 'AI Infrastructure & Bitcoin Mining' },
-      { ticker: 'KEEL',  name: 'Keel Infrastructure Corp',      type: 'stock', sector: 'AI Data Centers & HPC Infrastructure' },
-      { ticker: 'CRWD',  name: 'CrowdStrike Holdings',          type: 'stock', sector: 'Cybersecurity' },
-      { ticker: 'AMZN',  name: 'Amazon',                        type: 'stock', sector: 'E-Commerce & Cloud' },
-      { ticker: 'OPEN',  name: 'Opendoor Technologies',         type: 'stock', sector: 'PropTech & Real Estate AI' },
-      { ticker: 'QXO',   name: 'QXO Inc',                       type: 'stock', sector: 'Building Products Distribution' },
-      { ticker: 'APLD',  name: 'Applied Digital',               type: 'stock', sector: 'AI Infrastructure & HPC' },
-      { ticker: 'AIPO',  name: 'AI Powered Equity ETF',         type: 'etf',   sector: 'AI-Powered Equity ETF' },
-      { ticker: 'QQQM',  name: 'Invesco Nasdaq-100 ETF',        type: 'etf',   sector: 'Mega-Cap Tech ETF' },
-      { ticker: 'IBIT',  name: 'iShares Bitcoin ETF',           type: 'etf',   sector: 'Bitcoin ETF' },
-      { ticker: 'ARKQ',  name: 'ARK Autonomous Technology ETF', type: 'etf',   sector: 'Autonomous Technology & Robotics ETF' },
-      { ticker: 'FOTO',  name: 'FOTO ETF',                      type: 'etf',   sector: 'Photography & Imaging ETF' },
-      { ticker: 'NASA',  name: 'Procure Space ETF',             type: 'etf',   sector: 'Space Industry ETF' },
+      { ticker: 'PLTR',  name: 'Palantir Technologies',          type: 'stock', sector: 'AI Software & Defense Tech' },
+      { ticker: 'AFRM',  name: 'Affirm Holdings',                type: 'stock', sector: 'Fintech & BNPL' },
+      { ticker: 'KEEL',  name: 'Keel Infrastructure Corp',       type: 'stock', sector: 'AI Data Centers & HPC Infrastructure' },
+      { ticker: 'APLD',  name: 'Applied Digital',                type: 'stock', sector: 'AI Infrastructure & HPC' },
+      { ticker: 'CRWD',  name: 'CrowdStrike Holdings',           type: 'stock', sector: 'Cybersecurity' },
+      { ticker: 'IREN',  name: 'Iris Energy',                    type: 'stock', sector: 'AI Infrastructure & Bitcoin Mining' },
+      { ticker: 'AMZN',  name: 'Amazon',                         type: 'stock', sector: 'E-Commerce & Cloud' },
+      { ticker: 'OPEN',  name: 'Opendoor Technologies',          type: 'stock', sector: 'PropTech & Real Estate AI' },
+      { ticker: 'RKLB',  name: 'Rocket Lab Corporation',         type: 'stock', sector: 'Space & Defense' },
+      { ticker: 'QXO',   name: 'QXO Inc',                        type: 'stock', sector: 'Building Products Distribution' },
+      { ticker: 'WYFI',  name: 'WhiteFiber Inc',                 type: 'stock', sector: 'AI Infrastructure & HPC' },
+      { ticker: 'AIPO',  name: 'AI Powered Equity ETF',          type: 'etf',   sector: 'AI-Powered Equity ETF' },
+      { ticker: 'QQQM',  name: 'Invesco Nasdaq-100 ETF',         type: 'etf',   sector: 'Mega-Cap Tech ETF' },
+      { ticker: 'IBIT',  name: 'iShares Bitcoin ETF',            type: 'etf',   sector: 'Bitcoin ETF' },
+      { ticker: 'ARKQ',  name: 'ARK Autonomous Technology ETF',  type: 'etf',   sector: 'Autonomous Technology & Robotics ETF' },
     ];
   }
 }
