@@ -8,11 +8,11 @@
       "query": "($PLTR OR #PLTR OR \"Palantir\") -is:retweet lang:en"
     },
     {
-      "ticker": "IREN",
-      "name": "Iris Energy",
+      "ticker": "AFRM",
+      "name": "Affirm Holdings",
       "type": "stock",
-      "sector": "AI Infrastructure & Bitcoin Mining",
-      "query": "($IREN OR #IREN OR \"Iris Energy\") -is:retweet lang:en"
+      "sector": "Fintech & BNPL",
+      "query": "($AFRM OR #AFRM OR \"Affirm Holdings\" OR \"Affirm stock\") -is:retweet lang:en"
     },
     {
       "ticker": "KEEL",
@@ -22,11 +22,25 @@
       "query": "($KEEL OR #KEEL OR \"Keel Infrastructure\" OR \"Bitfarms\") -is:retweet lang:en"
     },
     {
+      "ticker": "APLD",
+      "name": "Applied Digital",
+      "type": "stock",
+      "sector": "AI Infrastructure & HPC",
+      "query": "($APLD OR #APLD OR \"Applied Digital\") -is:retweet lang:en"
+    },
+    {
       "ticker": "CRWD",
       "name": "CrowdStrike Holdings",
       "type": "stock",
       "sector": "Cybersecurity",
       "query": "($CRWD OR #CRWD OR \"CrowdStrike\") -is:retweet lang:en"
+    },
+    {
+      "ticker": "IREN",
+      "name": "Iris Energy",
+      "type": "stock",
+      "sector": "AI Infrastructure & Bitcoin Mining",
+      "query": "($IREN OR #IREN OR \"Iris Energy\") -is:retweet lang:en"
     },
     {
       "ticker": "AMZN",
@@ -43,6 +57,13 @@
       "query": "($OPEN OR #OPEN OR \"Opendoor\" OR \"Opendoor Technologies\") -is:retweet lang:en"
     },
     {
+      "ticker": "RKLB",
+      "name": "Rocket Lab Corporation",
+      "type": "stock",
+      "sector": "Space & Defense",
+      "query": "($RKLB OR #RKLB OR \"Rocket Lab\") -is:retweet lang:en"
+    },
+    {
       "ticker": "QXO",
       "name": "QXO Inc",
       "type": "stock",
@@ -50,18 +71,18 @@
       "query": "($QXO OR #QXO OR \"QXO Inc\" OR \"Brad Jacobs QXO\") -is:retweet lang:en"
     },
     {
-      "ticker": "APLD",
-      "name": "Applied Digital",
+      "ticker": "WYFI",
+      "name": "WhiteFiber Inc",
       "type": "stock",
       "sector": "AI Infrastructure & HPC",
-      "query": "($APLD OR #APLD OR \"Applied Digital\") -is:retweet lang:en"
+      "query": "($WYFI OR #WYFI OR \"WhiteFiber\") -is:retweet lang:en"
     },
     {
       "ticker": "AIPO",
       "name": "AI Powered Equity ETF",
       "type": "etf",
       "sector": "AI-Powered Equity ETF",
-      "query": "($AIPO OR #AIPO OR \"AI Powered ETF\" OR \"AIPO ETF\") -is:retweet lang:en"
+      "query": "($AIPO OR #AIPO OR \"AIPO ETF\") -is:retweet lang:en"
     },
     {
       "ticker": "QQQM",
@@ -75,7 +96,7 @@
       "name": "iShares Bitcoin ETF",
       "type": "etf",
       "sector": "Bitcoin ETF",
-      "query": "($IBIT OR #IBIT OR \"IBIT ETF\") -is:retweet lang:en"
+      "query": "($BTC OR #Bitcoin OR \"Bitcoin price\" OR \"Bitcoin ETF\" OR \"Bitcoin bull\") -is:retweet lang:en"
     },
     {
       "ticker": "ARKQ",
@@ -83,20 +104,6 @@
       "type": "etf",
       "sector": "Autonomous Technology & Robotics ETF",
       "query": "($ARKQ OR #ARKQ OR \"ARK Autonomous\" OR \"ARKQ ETF\") -is:retweet lang:en"
-    },
-    {
-      "ticker": "FOTO",
-      "name": "FOTO ETF",
-      "type": "etf",
-      "sector": "Photography & Imaging ETF",
-      "query": "($FOTO OR #FOTO OR \"FOTO ETF\") -is:retweet lang:en"
-    },
-    {
-      "ticker": "NASA",
-      "name": "Procure Space ETF",
-      "type": "etf",
-      "sector": "Space Industry ETF",
-      "query": "($NASA OR #NASA OR \"Procure Space ETF\" OR \"NASA ETF\") -is:retweet lang:en"
     }
   ]
 }
