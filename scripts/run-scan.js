@@ -471,149 +471,153 @@ function buildETFInstitutional() {
 }
 
 // ─── FMP ANALYST PRICE TARGETS ───────────────────────────────────────────────
-// Confirmed free tier endpoints from official FMP docs:
-// Price Target Consensus: https://financialmodelingprep.com/stable/price-target-consensus?symbol={ticker}
-//   Fields: targetHigh, targetLow, targetMedian, targetConsensus
-// Current Quote: https://financialmodelingprep.com/stable/quote/{ticker}
-//   Fields: price, symbol
-// Ref: https://site.financialmodelingprep.com/developer/docs/stable/price-target-consensus
+// Uses BATCH endpoints to fetch ALL tickers in ONE API call each
+// Confirmed free tier:
+//   /stable/quote?symbol=PLTR,IREN,...  → current prices (1 call)
+//   /stable/price-target-consensus?symbol=PLTR,IREN,... → targets (1 call)
+// Total: 2 FMP calls for all 15 tickers instead of 45 — no rate limiting
 
-async function fetchAnalystData(ticker, type) {
-  const apiKey = process.env.FMP_API_KEY;
+async function fetchAllAnalystData(tickers, fmpApiKey) {
+  const results = {};
 
-  if (type === "etf") {
-    return { available: false, note: "ETFs do not have analyst price targets" };
+  if (!fmpApiKey) {
+    console.log("  FMP: no API key — analyst targets unavailable");
+    return results;
   }
 
-  if (!apiKey) {
-    return { available: false, note: "Add FMP_API_KEY to GitHub Secrets to activate" };
-  }
+  // Initialize all tickers as unavailable
+  tickers.forEach(({ ticker, type }) => {
+    results[ticker] = type === "etf"
+      ? { available: false, note: "ETFs do not have analyst price targets" }
+      : { available: false, note: "FMP data unavailable" };
+  });
+
+  const stockTickers = tickers.filter(t => t.type !== "etf").map(t => t.ticker);
+  if (!stockTickers.length) return results;
+
+  const symbols = stockTickers.join(",");
 
   try {
-    // FMP free tier: rate limited to ~10 calls/minute
-    // Wait 8s before each ticker's calls to stay safely under the limit
-    await sleep(8000);
-
-    // Step 1: Get current stock price — retry once on 429/402 rate limit
-    async function fmpFetch(url) {
-      let res = await fetch(url);
-      if (res.status === 429 || res.status === 402) {
-        await sleep(8000); // wait 8s and retry once on rate limit
-        res = await fetch(url);
-      }
-      return res;
-    }
-
-    const quoteRes = await fmpFetch(
-      `https://financialmodelingprep.com/stable/quote?symbol=${ticker}&apikey=${apiKey}`
+    // CALL 1: Batch current prices
+    console.log(`  FMP batch quote: ${stockTickers.length} tickers...`);
+    const quoteRes = await fetch(
+      `https://financialmodelingprep.com/stable/quote?symbol=${symbols}&apikey=${fmpApiKey}`
     );
 
-    let currentPrice = null;
-    if (quoteRes.ok) {
-      const quoteData = await quoteRes.json();
-      if (Array.isArray(quoteData) && quoteData.length > 0) {
-        if (quoteData[0].price === undefined) {
-          console.log(`  [${ticker}] FMP quote: unexpected fields. Got: ${Object.keys(quoteData[0]).join(", ")}`);
-        } else {
-          currentPrice = parseFloat(quoteData[0].price) || null;
-        }
-      } else if (quoteData?.["Error Message"]) {
-        console.log(`  [${ticker}] FMP quote error: ${quoteData["Error Message"]}`);
-        return { available: false, note: "FMP API key invalid or limit reached" };
+    if (!quoteRes.ok) {
+      if (quoteRes.status === 402) {
+        console.log(`  FMP: 402 — daily limit reached (250 calls/day). Resets tomorrow.`);
+        console.log(`  FMP: batch uses only 2 calls/day — limit was hit by previous runs today.`);
+      } else {
+        console.log(`  FMP batch quote: ${quoteRes.status}`);
+      }
+      return results;
+    }
+
+    const quoteData = await quoteRes.json();
+    if (!Array.isArray(quoteData)) {
+      console.log(`  FMP batch quote: unexpected response`);
+      return results;
+    }
+
+    // Build price map
+    const priceMap = {};
+    quoteData.forEach(q => {
+      if (q.symbol && q.price) {
+        priceMap[q.symbol] = parseFloat(q.price);
+      }
+    });
+    console.log(`  FMP batch quote: got prices for ${Object.keys(priceMap).length} tickers`);
+
+    await sleep(3000);
+
+    // CALL 2: Batch consensus targets
+    console.log(`  FMP batch consensus: ${stockTickers.length} tickers...`);
+    const targetRes = await fetch(
+      `https://financialmodelingprep.com/stable/price-target-consensus?symbol=${symbols}&apikey=${fmpApiKey}`
+    );
+
+    let targetMap = {};
+    if (targetRes.ok) {
+      const targetData = await targetRes.json();
+      if (Array.isArray(targetData)) {
+        targetData.forEach(t => {
+          if (t.symbol) {
+            targetMap[t.symbol] = t;
+          }
+        });
+        console.log(`  FMP batch consensus: got targets for ${Object.keys(targetMap).length} tickers`);
       }
     } else {
-      console.log(`  [${ticker}] FMP quote: ${quoteRes.status}`);
-      return { available: false, note: `FMP quote returned ${quoteRes.status}` };
+      console.log(`  FMP batch consensus: ${targetRes.status}`);
     }
 
-    if (!currentPrice) {
-      return { available: false, note: `FMP price unavailable` };
-    }
+    // Build results for each ticker
+    stockTickers.forEach(ticker => {
+      const price = priceMap[ticker];
+      const target = targetMap[ticker];
 
-    await sleep(3000); // delay between quote and consensus calls
-
-    // Step 2: Get analyst price target consensus
-    // Confirmed free endpoint: /stable/price-target-consensus?symbol={ticker}
-    // Fields: targetHigh, targetLow, targetMedian, targetConsensus
-    const targetRes = await fmpFetch(
-      `https://financialmodelingprep.com/stable/price-target-consensus?symbol=${ticker}&apikey=${apiKey}`
-    );
-
-    if (!targetRes.ok) {
-      console.log(`  [${ticker}] FMP price-target-consensus: ${targetRes.status}`);
-      return { available: false, note: `FMP targets returned ${targetRes.status}` };
-    }
-
-    const targetData = await targetRes.json();
-
-    if (!Array.isArray(targetData) || targetData.length === 0) {
-      if (targetData?.["Error Message"]) {
-        console.log(`  [${ticker}] FMP targets error: ${targetData["Error Message"]}`);
-        return { available: false, note: "FMP API key invalid or limit reached" };
+      if (!price) {
+        results[ticker] = { available: false, note: "No price data from FMP" };
+        return;
       }
-      return { available: false, note: "No analyst coverage found" };
-    }
 
-    const t = targetData[0];
-
-    // Confirmed fields from FMP price-target-consensus:
-    // targetHigh, targetLow, targetMedian, targetConsensus
-    // NOTE: analyst count is NOT in this endpoint — it's in price-target-summary
-    if (t.targetConsensus === undefined && t.targetMedian === undefined) {
-      console.log(`  [${ticker}] FMP targets: unexpected fields. Got: ${Object.keys(t).join(", ")}`);
-      return { available: false, note: "FMP response format changed" };
-    }
-
-    const avgTarget  = parseFloat(getField(t, "targetConsensus", "targetMedian") || 0);
-    const highTarget = parseFloat(getField(t, "targetHigh") || 0);
-    const lowTarget  = parseFloat(getField(t, "targetLow")  || 0);
-
-    if (!avgTarget) {
-      return { available: false, note: "No consensus price target available" };
-    }
-
-    // Get analyst count from price-target-summary (separate endpoint, same free tier)
-    let numAnalysts = 0;
-    try {
-      await sleep(3000);
-      const summaryRes = await fmpFetch(
-        `https://financialmodelingprep.com/stable/price-target-summary?symbol=${ticker}&apikey=${apiKey}`
+      const avgTarget = parseFloat(
+        getField(target || {}, "targetConsensus", "targetMedian") || 0
       );
-      if (summaryRes.ok) {
-        const summaryData = await summaryRes.json();
-        if (Array.isArray(summaryData) && summaryData.length > 0) {
-          // price-target-summary fields: lastMonth.numOfAnalysts, lastQuarter.numOfAnalysts
-          const latest = summaryData[0].lastMonth || summaryData[0].lastQuarter || summaryData[0];
-          numAnalysts = parseInt(getField(latest, "numOfAnalysts", "numberOfAnalysts", "numAnalysts") || 0);
-        }
+
+      if (!avgTarget) {
+        results[ticker] = {
+          available: false,
+          note: "No analyst coverage on FMP",
+          currentPrice: price,
+        };
+        console.log(`  [${ticker}] FMP: price $${price} — no analyst target`);
+        return;
       }
-    } catch(e) { /* non-fatal — analyst count just won't show */ }
 
-    const upsidePct = parseFloat(((avgTarget - currentPrice) / currentPrice * 100).toFixed(1));
+      const upsidePct = parseFloat(
+        ((avgTarget - price) / price * 100).toFixed(1)
+      );
+      const highTarget = parseFloat(getField(target, "targetHigh") || 0);
+      const lowTarget  = parseFloat(getField(target, "targetLow")  || 0);
 
-    console.log(`  [${ticker}] FMP: price $${currentPrice} → consensus target $${avgTarget} → ${upsidePct > 0 ? "+" : ""}${upsidePct}%`);
+      const signal = upsidePct >= 20  ? "strong_upside"
+                   : upsidePct >= 5   ? "upside"
+                   : upsidePct <= -20 ? "strong_downside"
+                   : upsidePct <= -5  ? "downside"
+                   : "neutral";
 
-    return {
-      available: true,
-      currentPrice,
-      avgTarget,
-      highTarget,
-      lowTarget,
-      numAnalysts,
-      upsidePct,
-      signal: upsidePct >= 20  ? "strong_upside"
-            : upsidePct >= 5   ? "upside"
-            : upsidePct <= -20 ? "strong_downside"
-            : upsidePct <= -5  ? "downside"
-            : "neutral",
-      lastUpdated: new Date().toISOString(),
-    };
+      results[ticker] = {
+        available: true,
+        currentPrice: price,
+        avgTarget,
+        highTarget,
+        lowTarget,
+        numAnalysts: 0,
+        upsidePct,
+        signal,
+        lastUpdated: new Date().toISOString(),
+      };
+
+      console.log(`  [${ticker}] FMP: $${price} → $${avgTarget} → ${upsidePct > 0 ? "+" : ""}${upsidePct}%`);
+    });
 
   } catch (e) {
-    console.log(`  [${ticker}] FMP error: ${e.message}`);
-    return { available: false, note: e.message };
+    console.log(`  FMP batch error: ${e.message}`);
   }
+
+  return results;
 }
+
+// Keep single-ticker version for compatibility (now just reads from batch map)
+async function fetchAnalystData(ticker, type, analystMap) {
+  if (analystMap && analystMap[ticker]) return analystMap[ticker];
+  return type === "etf"
+    ? { available: false, note: "ETFs do not have analyst price targets" }
+    : { available: false, note: "Run fetchAllAnalystData first" };
+}
+
 
 // ─── SENTIMENT ANALYSIS ───────────────────────────────────────────────────────
 
@@ -786,6 +790,11 @@ async function main() {
   console.log(`🏦 Quiver Quant: ${hasQuiver ? "✓ active" : "✗ no key"}`);
   console.log(`📊 FMP Analyst:  ${hasFMP    ? "✓ active" : "✗ no key"}\n`);
 
+  // Fetch ALL analyst targets in 2 batch API calls upfront (avoids rate limiting)
+  console.log("📊 Fetching analyst targets (batch)...");
+  const analystMap = await fetchAllAnalystData(WATCHLIST, process.env.FMP_API_KEY);
+  console.log(`   Done — ${Object.values(analystMap).filter(a => a.available).length}/${WATCHLIST.filter(t => t.type !== 'etf').length} stocks have targets\n`);
+
   fs.mkdirSync("data",         { recursive: true });
   fs.mkdirSync("data/history", { recursive: true });
   fs.mkdirSync("data/tweet-cache", { recursive: true });
@@ -815,7 +824,7 @@ async function main() {
     const institutional = await fetchInstitutionalData(ticker, type || "stock");
     process.stdout.write(` Analyst...`);
 
-    const analyst = await fetchAnalystData(ticker, type || "stock");
+    const analyst = await fetchAnalystData(ticker, type || "stock", analystMap);
     process.stdout.write(` done\n`);
 
 
