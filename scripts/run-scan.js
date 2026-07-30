@@ -625,13 +625,14 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 async function analyzeSentiment(ticker, name, type, sector, tweets, yesterday) {
   if (!tweets.length) {
+    console.log(`  [${ticker}] No posts found — Twitter quota may be depleted or ticker has low social volume`);
     const trend = calcTrend(0, yesterday);
     return {
       ticker, name, type, sector,
       sentimentScore: 0, signal: "NEUTRAL",
       bullCount: 0, bearCount: 0, neutralCount: 0,
       keyThemes: [], topBullish: null, topBearish: null,
-      summary: "No posts found for this ticker in the last 24 hours.",
+      summary: "Insufficient social data for this ticker today.",
       volumeTrend: "silent", confidence: "low",
       tweetCount: 0, filteredCount: 0,
       sentimentTrend: trend.trend, sentimentDelta: 0,
@@ -652,28 +653,34 @@ async function analyzeSentiment(ticker, name, type, sector, tweets, yesterday) {
     max_tokens: 1000,
     messages: [{
       role: "user",
-      content: `You are a financial sentiment analysis engine. ${context}
+      content: `You are a financial analyst writing a concise daily briefing. ${context}
 
-Analyze these ${cleanedTweets.length} pre-filtered social media posts about $${ticker} (${name}) and return ONLY valid JSON — no markdown, no preamble.
+Analyze these ${cleanedTweets.length} social media posts about $${ticker} (${name}).
+
+CRITICAL RULES FOR YOUR RESPONSE:
+1. The "summary" field must be 2 sentences focused ONLY on the stock's investment thesis, price action, catalysts, or risks. Never mention spam, bots, post quality, WhatsApp groups, or data limitations in the summary — those are irrelevant to an investor.
+2. "keyThemes" must be 3-5 concise financial themes (e.g. "AWS cloud growth", "insider buying", "valuation concern") — never meta-commentary about post quality.
+3. Score only genuine financial sentiment. Ignore promotional or off-topic posts.
+4. If fewer than 3 genuine financial posts exist, set signal to NEUTRAL and confidence to low.
 
 Posts:
 ${tweetBlock}
 
-Return exactly this JSON:
+Return ONLY valid JSON — no markdown, no explanation:
 {
   "ticker": "${ticker}",
   "name": "${name}",
   "sentimentScore": <float -1.0 to 1.0>,
   "signal": <"STRONG_BUY"|"BUY"|"NEUTRAL"|"SELL"|"STRONG_SELL">,
-  "bullCount": <integer>,
-  "bearCount": <integer>,
-  "neutralCount": <integer>,
-  "keyThemes": [<3-5 short theme strings>],
-  "topBullish": <most bullish post verbatim or null>,
-  "topBearish": <most bearish post verbatim or null>,
-  "summary": <2-sentence analyst-quality summary>,
+  "bullCount": <integer — genuine financial posts only>,
+  "bearCount": <integer — genuine financial posts only>,
+  "neutralCount": <integer — genuine financial posts only>,
+  "keyThemes": [<3-5 financial themes, no spam commentary>],
+  "topBullish": <most bullish genuine post or null>,
+  "topBearish": <most bearish genuine post or null>,
+  "summary": <2-sentence investor-focused summary — NO mention of spam, bots, or post quality>,
   "volumeTrend": <"surging"|"increasing"|"stable"|"declining"|"silent">,
-  "confidence": <"high" if 10+ posts, "medium" if 5-9, "low" if fewer than 5>
+  "confidence": <"high" if 10+ genuine posts, "medium" if 5-9, "low" if fewer than 5>
 }`,
     }],
   });
