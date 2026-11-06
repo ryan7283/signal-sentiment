@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-11-05T20:25:14.501Z",
+  "generatedAt": "2026-11-06T19:46:52.026Z",
   "tickerCount": 15,
   "version": "9.0",
   "vix": {
-    "value": 16.61,
-    "zone": "normal",
-    "label": "NORMAL",
-    "advice": "Normal market — maintain current allocations"
+    "value": 28.18,
+    "zone": "high",
+    "label": "ELEVATED",
+    "advice": "High stress — reduce AI/speculative exposure, increase defensive ETF allocation"
   },
   "results": [
     {
@@ -31,7 +31,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.11,
-      "analyzedAt": "2026-11-05T20:23:04.846Z",
+      "analyzedAt": "2026-11-06T19:45:13.463Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -43,9 +43,9 @@
         "insiderSignal": "bearish",
         "insiderNote": "98 open-market sale(s) vs 16 purchase(s) — last 180 days",
         "hedgeFundSignal": "bullish",
-        "hedgeFundNote": "1035 fund(s) increasing positions vs 610 decreasing — 2026-09-30T00:00:00.000 · Top: WT Asset Management Ltd",
-        "hedgeFundBuys": 1035,
-        "hedgeFundSells": 610,
+        "hedgeFundNote": "1108 fund(s) increasing positions vs 647 decreasing — 2026-09-30T00:00:00.000 · Top: WT Asset Management Ltd",
+        "hedgeFundBuys": 1108,
+        "hedgeFundSells": 647,
         "topHedgeFund": "WT Asset Management Ltd",
         "hasGovContracts": true,
         "govContractNote": "48 contract(s) · $483.2M total — last 12mo",
@@ -55,7 +55,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-05T20:23:39.409Z"
+        "lastUpdated": "2026-11-06T19:45:32.895Z"
       },
       "analyst": {
         "available": false,
@@ -84,7 +84,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.19,
-      "analyzedAt": "2026-11-05T20:23:40.924Z",
+      "analyzedAt": "2026-11-06T19:45:34.303Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -96,9 +96,9 @@
         "insiderSignal": "bullish",
         "insiderNote": "26 open-market purchase(s) vs 18 sale(s) — last 180 days",
         "hedgeFundSignal": "bullish",
-        "hedgeFundNote": "144 fund(s) increasing positions vs 107 decreasing — 2026-09-30T00:00:00.000 · Top: Daiwa Securities Group Inc.",
-        "hedgeFundBuys": 144,
-        "hedgeFundSells": 107,
+        "hedgeFundNote": "158 fund(s) increasing positions vs 117 decreasing — 2026-09-30T00:00:00.000 · Top: Daiwa Securities Group Inc.",
+        "hedgeFundBuys": 158,
+        "hedgeFundSells": 117,
         "topHedgeFund": "Daiwa Securities Group Inc.",
         "hasGovContracts": false,
         "govContractNote": "No government contracts found",
@@ -108,7 +108,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-05T20:23:49.635Z"
+        "lastUpdated": "2026-11-06T19:45:44.391Z"
       },
       "analyst": {
         "available": false,
@@ -137,7 +137,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.19,
-      "analyzedAt": "2026-11-05T20:23:51.160Z",
+      "analyzedAt": "2026-11-06T19:45:45.732Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -149,9 +149,9 @@
         "insiderSignal": "bullish",
         "insiderNote": "8 open-market purchase(s) vs 3 sale(s) — last 180 days · Gagnon Benjamin",
         "hedgeFundSignal": "bullish",
-        "hedgeFundNote": "47 fund(s) increasing positions vs 35 decreasing — 2026-09-30T00:00:00.000 · Top: IMC-Chicago, LLC",
-        "hedgeFundBuys": 47,
-        "hedgeFundSells": 35,
+        "hedgeFundNote": "53 fund(s) increasing positions vs 40 decreasing — 2026-09-30T00:00:00.000 · Top: IMC-Chicago, LLC",
+        "hedgeFundBuys": 53,
+        "hedgeFundSells": 40,
         "topHedgeFund": "IMC-Chicago, LLC",
         "hasGovContracts": false,
         "govContractNote": "No government contracts found",
@@ -161,7 +161,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-05T20:23:54.114Z"
+        "lastUpdated": "2026-11-06T19:45:48.852Z"
       },
       "analyst": {
         "available": false,
@@ -174,7 +174,7 @@
       "type": "stock",
       "sector": "AI Infrastructure & HPC",
       "sentimentScore": 0,
-      "signal": "NEUTRAL",
+      "signal": "BUY",
       "bullCount": 0,
       "bearCount": 0,
       "neutralCount": 0,
@@ -189,8 +189,8 @@
       "sentimentTrend": "stable",
       "sentimentDelta": 0,
       "arrow": "→",
-      "compositeScore": 0.05,
-      "analyzedAt": "2026-11-05T20:23:55.622Z",
+      "compositeScore": 0.19,
+      "analyzedAt": "2026-11-06T19:45:50.181Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -199,12 +199,12 @@
         "congressNote": "No congressional trades found",
         "congressBuys": 0,
         "congressSells": 0,
-        "insiderSignal": "bearish",
-        "insiderNote": "15 open-market sale(s) vs 13 purchase(s) — last 180 days",
+        "insiderSignal": "bullish",
+        "insiderNote": "18 open-market purchase(s) vs 15 sale(s) — last 180 days · Cummins Wes",
         "hedgeFundSignal": "bullish",
-        "hedgeFundNote": "112 fund(s) increasing positions vs 84 decreasing — 2026-09-30T00:00:00.000 · Top: IMC-Chicago, LLC",
-        "hedgeFundBuys": 112,
-        "hedgeFundSells": 84,
+        "hedgeFundNote": "126 fund(s) increasing positions vs 93 decreasing — 2026-09-30T00:00:00.000 · Top: IMC-Chicago, LLC",
+        "hedgeFundBuys": 126,
+        "hedgeFundSells": 93,
         "topHedgeFund": "IMC-Chicago, LLC",
         "hasGovContracts": false,
         "govContractNote": "No government contracts found",
@@ -214,7 +214,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-05T20:24:00.706Z"
+        "lastUpdated": "2026-11-06T19:45:54.916Z"
       },
       "analyst": {
         "available": false,
@@ -243,7 +243,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.11,
-      "analyzedAt": "2026-11-05T20:24:02.188Z",
+      "analyzedAt": "2026-11-06T19:45:56.277Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -253,12 +253,12 @@
         "congressBuys": 10,
         "congressSells": 5,
         "insiderSignal": "bearish",
-        "insiderNote": "1888 open-market sale(s) vs 25 purchase(s) — last 180 days",
+        "insiderNote": "1910 open-market sale(s) vs 25 purchase(s) — last 180 days",
         "hedgeFundSignal": "bullish",
-        "hedgeFundNote": "719 fund(s) increasing positions vs 638 decreasing — 2026-09-30T00:00:00.000 · Top: Assenagon Asset Management S.A.",
-        "hedgeFundBuys": 719,
-        "hedgeFundSells": 638,
-        "topHedgeFund": "Assenagon Asset Management S.A.",
+        "hedgeFundNote": "774 fund(s) increasing positions vs 673 decreasing — 2026-09-30T00:00:00.000 · Top: DEUTSCHE BANK AG\\",
+        "hedgeFundBuys": 774,
+        "hedgeFundSells": 673,
+        "topHedgeFund": "DEUTSCHE BANK AG\\",
         "hasGovContracts": false,
         "govContractNote": "No government contracts found",
         "govContractTotal": 0,
@@ -267,7 +267,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-05T20:24:16.533Z"
+        "lastUpdated": "2026-11-06T19:46:09.146Z"
       },
       "analyst": {
         "available": false,
@@ -296,7 +296,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.25,
-      "analyzedAt": "2026-11-05T20:24:17.993Z",
+      "analyzedAt": "2026-11-06T19:46:10.496Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -308,9 +308,9 @@
         "insiderSignal": "bullish",
         "insiderNote": "9 open-market purchase(s) vs 0 sale(s) — last 180 days",
         "hedgeFundSignal": "bullish",
-        "hedgeFundNote": "168 fund(s) increasing positions vs 103 decreasing — 2026-09-30T00:00:00.000 · Top: IMC-Chicago, LLC",
-        "hedgeFundBuys": 168,
-        "hedgeFundSells": 103,
+        "hedgeFundNote": "186 fund(s) increasing positions vs 108 decreasing — 2026-09-30T00:00:00.000 · Top: IMC-Chicago, LLC",
+        "hedgeFundBuys": 186,
+        "hedgeFundSells": 108,
         "topHedgeFund": "IMC-Chicago, LLC",
         "hasGovContracts": false,
         "govContractNote": "No government contracts found",
@@ -320,7 +320,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-05T20:24:22.183Z"
+        "lastUpdated": "2026-11-06T19:46:15.155Z"
       },
       "analyst": {
         "available": false,
@@ -349,7 +349,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": -0.01,
-      "analyzedAt": "2026-11-05T20:24:23.696Z",
+      "analyzedAt": "2026-11-06T19:46:16.490Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -361,9 +361,9 @@
         "insiderSignal": "bearish",
         "insiderNote": "60 open-market sale(s) vs 33 purchase(s) — last 180 days",
         "hedgeFundSignal": "bullish",
-        "hedgeFundNote": "1756 fund(s) increasing positions vs 1393 decreasing — 2026-09-30T00:00:00.000 · Top: Assenagon Asset Management S.A.",
-        "hedgeFundBuys": 1756,
-        "hedgeFundSells": 1393,
+        "hedgeFundNote": "1857 fund(s) increasing positions vs 1470 decreasing — 2026-09-30T00:00:00.000 · Top: Assenagon Asset Management S.A.",
+        "hedgeFundBuys": 1857,
+        "hedgeFundSells": 1470,
         "topHedgeFund": "Assenagon Asset Management S.A.",
         "hasGovContracts": false,
         "govContractNote": "No government contracts found",
@@ -373,7 +373,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-05T20:24:30.219Z"
+        "lastUpdated": "2026-11-06T19:46:22.801Z"
       },
       "analyst": {
         "available": false,
@@ -402,7 +402,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.13,
-      "analyzedAt": "2026-11-05T20:24:31.775Z",
+      "analyzedAt": "2026-11-06T19:46:24.118Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -414,9 +414,9 @@
         "insiderSignal": "bullish",
         "insiderNote": "10 open-market purchase(s) vs 4 sale(s) — last 180 days · Nejatian Kasra",
         "hedgeFundSignal": "bullish",
-        "hedgeFundNote": "65 fund(s) increasing positions vs 59 decreasing — 2026-09-30T00:00:00.000 · Top: Daiwa Securities Group Inc.",
-        "hedgeFundBuys": 65,
-        "hedgeFundSells": 59,
+        "hedgeFundNote": "71 fund(s) increasing positions vs 66 decreasing — 2026-09-30T00:00:00.000 · Top: Daiwa Securities Group Inc.",
+        "hedgeFundBuys": 71,
+        "hedgeFundSells": 66,
         "topHedgeFund": "Daiwa Securities Group Inc.",
         "hasGovContracts": false,
         "govContractNote": "No government contracts found",
@@ -426,7 +426,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-05T20:24:44.496Z"
+        "lastUpdated": "2026-11-06T19:46:29.520Z"
       },
       "analyst": {
         "available": false,
@@ -455,7 +455,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.05,
-      "analyzedAt": "2026-11-05T20:24:46.012Z",
+      "analyzedAt": "2026-11-06T19:46:30.834Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -467,9 +467,9 @@
         "insiderSignal": "bearish",
         "insiderNote": "116 open-market sale(s) vs 15 purchase(s) — last 180 days",
         "hedgeFundSignal": "bullish",
-        "hedgeFundNote": "342 fund(s) increasing positions vs 192 decreasing — 2026-09-30T00:00:00.000 · Top: Sumitomo Mitsui Trust Group, Inc.",
-        "hedgeFundBuys": 342,
-        "hedgeFundSells": 192,
+        "hedgeFundNote": "367 fund(s) increasing positions vs 211 decreasing — 2026-09-30T00:00:00.000 · Top: Sumitomo Mitsui Trust Group, Inc.",
+        "hedgeFundBuys": 367,
+        "hedgeFundSells": 211,
         "topHedgeFund": "Sumitomo Mitsui Trust Group, Inc.",
         "hasGovContracts": true,
         "govContractNote": "3 contract(s) · $29.7M total — last 12mo",
@@ -479,7 +479,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-05T20:24:56.065Z"
+        "lastUpdated": "2026-11-06T19:46:35.588Z"
       },
       "analyst": {
         "available": false,
@@ -508,7 +508,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.19,
-      "analyzedAt": "2026-11-05T20:24:57.578Z",
+      "analyzedAt": "2026-11-06T19:46:36.896Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -520,10 +520,10 @@
         "insiderSignal": "bullish",
         "insiderNote": "3 open-market purchase(s) vs 1 sale(s) — last 180 days",
         "hedgeFundSignal": "bullish",
-        "hedgeFundNote": "242 fund(s) increasing positions vs 84 decreasing — 2026-09-30T00:00:00.000 · Top: DIMENSIONAL FUND ADVISORS LP",
-        "hedgeFundBuys": 242,
-        "hedgeFundSells": 84,
-        "topHedgeFund": "DIMENSIONAL FUND ADVISORS LP",
+        "hedgeFundNote": "268 fund(s) increasing positions vs 88 decreasing — 2026-09-30T00:00:00.000 · Top: GEODE CAPITAL MANAGEMENT, LLC",
+        "hedgeFundBuys": 268,
+        "hedgeFundSells": 88,
+        "topHedgeFund": "GEODE CAPITAL MANAGEMENT, LLC",
         "hasGovContracts": false,
         "govContractNote": "No government contracts found",
         "govContractTotal": 0,
@@ -532,7 +532,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-05T20:25:02.670Z"
+        "lastUpdated": "2026-11-06T19:46:41.045Z"
       },
       "analyst": {
         "available": false,
@@ -561,7 +561,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.19,
-      "analyzedAt": "2026-11-05T20:25:04.164Z",
+      "analyzedAt": "2026-11-06T19:46:42.385Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -573,10 +573,10 @@
         "insiderSignal": "bullish",
         "insiderNote": "8 open-market purchase(s) vs 4 sale(s) — last 180 days",
         "hedgeFundSignal": "bullish",
-        "hedgeFundNote": "24 fund(s) increasing positions vs 14 decreasing — 2026-09-30T00:00:00.000 · Top: IMC-Chicago, LLC",
-        "hedgeFundBuys": 24,
+        "hedgeFundNote": "30 fund(s) increasing positions vs 14 decreasing — 2026-09-30T00:00:00.000 · Top: DEUTSCHE BANK AG\\",
+        "hedgeFundBuys": 30,
         "hedgeFundSells": 14,
-        "topHedgeFund": "IMC-Chicago, LLC",
+        "topHedgeFund": "DEUTSCHE BANK AG\\",
         "hasGovContracts": false,
         "govContractNote": "No government contracts found",
         "govContractTotal": 0,
@@ -585,7 +585,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-05T20:25:07.459Z"
+        "lastUpdated": "2026-11-06T19:46:45.652Z"
       },
       "analyst": {
         "available": false,
@@ -614,7 +614,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0,
-      "analyzedAt": "2026-11-05T20:25:08.981Z",
+      "analyzedAt": "2026-11-06T19:46:47.001Z",
       "institutional": {
         "source": "N/A — ETF",
         "available": false,
@@ -626,7 +626,7 @@
         "hedgeFundNote": "ETFs tracked differently",
         "instNote": "ETFs do not have insider or congressional data",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-05T20:25:08.981Z"
+        "lastUpdated": "2026-11-06T19:46:47.001Z"
       },
       "analyst": {
         "available": false,
@@ -655,7 +655,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0,
-      "analyzedAt": "2026-11-05T20:25:10.416Z",
+      "analyzedAt": "2026-11-06T19:46:48.279Z",
       "institutional": {
         "source": "N/A — ETF",
         "available": false,
@@ -667,7 +667,7 @@
         "hedgeFundNote": "ETFs tracked differently",
         "instNote": "ETFs do not have insider or congressional data",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-05T20:25:10.416Z"
+        "lastUpdated": "2026-11-06T19:46:48.279Z"
       },
       "analyst": {
         "available": false,
@@ -696,7 +696,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0,
-      "analyzedAt": "2026-11-05T20:25:11.855Z",
+      "analyzedAt": "2026-11-06T19:46:49.550Z",
       "institutional": {
         "source": "N/A — ETF",
         "available": false,
@@ -708,7 +708,7 @@
         "hedgeFundNote": "ETFs tracked differently",
         "instNote": "ETFs do not have insider or congressional data",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-05T20:25:11.855Z"
+        "lastUpdated": "2026-11-06T19:46:49.550Z"
       },
       "analyst": {
         "available": false,
@@ -737,7 +737,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0,
-      "analyzedAt": "2026-11-05T20:25:13.300Z",
+      "analyzedAt": "2026-11-06T19:46:50.825Z",
       "institutional": {
         "source": "N/A — ETF",
         "available": false,
@@ -749,7 +749,7 @@
         "hedgeFundNote": "ETFs tracked differently",
         "instNote": "ETFs do not have insider or congressional data",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-05T20:25:13.300Z"
+        "lastUpdated": "2026-11-06T19:46:50.825Z"
       },
       "analyst": {
         "available": false,
