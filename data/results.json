@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-25T22:04:21.658Z",
+  "generatedAt": "2026-11-26T22:02:31.860Z",
   "tickerCount": 15,
   "version": "9.0",
   "vix": {
-    "value": 26.36,
+    "value": 28.29,
     "zone": "high",
     "label": "ELEVATED",
     "advice": "High stress — reduce AI/speculative exposure, increase defensive ETF allocation"
@@ -31,7 +31,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.11,
-      "analyzedAt": "2026-11-25T22:02:56.316Z",
+      "analyzedAt": "2026-11-26T22:01:03.523Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -55,7 +55,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-25T22:03:05.910Z"
+        "lastUpdated": "2026-11-26T22:01:17.045Z"
       },
       "analyst": {
         "available": false,
@@ -84,7 +84,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.19,
-      "analyzedAt": "2026-11-25T22:03:07.260Z",
+      "analyzedAt": "2026-11-26T22:01:18.375Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -108,7 +108,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-25T22:03:12.577Z"
+        "lastUpdated": "2026-11-26T22:01:27.930Z"
       },
       "analyst": {
         "available": false,
@@ -137,7 +137,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.19,
-      "analyzedAt": "2026-11-25T22:03:13.906Z",
+      "analyzedAt": "2026-11-26T22:01:29.244Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -161,7 +161,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-25T22:03:17.496Z"
+        "lastUpdated": "2026-11-26T22:01:32.013Z"
       },
       "analyst": {
         "available": false,
@@ -190,7 +190,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.19,
-      "analyzedAt": "2026-11-25T22:03:18.809Z",
+      "analyzedAt": "2026-11-26T22:01:33.348Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -214,7 +214,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-25T22:03:22.329Z"
+        "lastUpdated": "2026-11-26T22:01:37.124Z"
       },
       "analyst": {
         "available": false,
@@ -243,7 +243,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.11,
-      "analyzedAt": "2026-11-25T22:03:23.647Z",
+      "analyzedAt": "2026-11-26T22:01:38.438Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -253,7 +253,7 @@
         "congressBuys": 10,
         "congressSells": 6,
         "insiderSignal": "bearish",
-        "insiderNote": "1723 open-market sale(s) vs 25 purchase(s) — last 180 days",
+        "insiderNote": "1742 open-market sale(s) vs 25 purchase(s) — last 180 days",
         "hedgeFundSignal": "bullish",
         "hedgeFundNote": "1350 fund(s) increasing positions vs 1187 decreasing — 2026-09-30T00:00:00.000 · Top: FMR LLC",
         "hedgeFundBuys": 1350,
@@ -267,7 +267,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-25T22:03:34.069Z"
+        "lastUpdated": "2026-11-26T22:01:51.593Z"
       },
       "analyst": {
         "available": false,
@@ -296,7 +296,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.25,
-      "analyzedAt": "2026-11-25T22:03:35.400Z",
+      "analyzedAt": "2026-11-26T22:01:52.916Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -320,7 +320,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-25T22:03:43.233Z"
+        "lastUpdated": "2026-11-26T22:01:57.060Z"
       },
       "analyst": {
         "available": false,
@@ -349,7 +349,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": -0.01,
-      "analyzedAt": "2026-11-25T22:03:44.548Z",
+      "analyzedAt": "2026-11-26T22:01:58.373Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -373,7 +373,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-25T22:03:48.652Z"
+        "lastUpdated": "2026-11-26T22:02:04.002Z"
       },
       "analyst": {
         "available": false,
@@ -402,7 +402,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.13,
-      "analyzedAt": "2026-11-25T22:03:49.970Z",
+      "analyzedAt": "2026-11-26T22:02:05.340Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -426,7 +426,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-25T22:03:57.953Z"
+        "lastUpdated": "2026-11-26T22:02:10.538Z"
       },
       "analyst": {
         "available": false,
@@ -455,7 +455,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.05,
-      "analyzedAt": "2026-11-25T22:03:59.268Z",
+      "analyzedAt": "2026-11-26T22:02:11.884Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -479,7 +479,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-25T22:04:06.339Z"
+        "lastUpdated": "2026-11-26T22:02:15.989Z"
       },
       "analyst": {
         "available": false,
@@ -508,7 +508,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.19,
-      "analyzedAt": "2026-11-25T22:04:07.680Z",
+      "analyzedAt": "2026-11-26T22:02:17.304Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -532,7 +532,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-25T22:04:11.003Z"
+        "lastUpdated": "2026-11-26T22:02:21.227Z"
       },
       "analyst": {
         "available": false,
@@ -561,7 +561,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0.19,
-      "analyzedAt": "2026-11-25T22:04:12.323Z",
+      "analyzedAt": "2026-11-26T22:02:22.537Z",
       "institutional": {
         "source": "Quiver Quant",
         "available": true,
@@ -585,7 +585,7 @@
         "offExchangeSignal": "bullish",
         "offExchangeNote": "Low short activity: 0.0% avg short ratio — last 30 days",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-25T22:04:15.123Z"
+        "lastUpdated": "2026-11-26T22:02:25.399Z"
       },
       "analyst": {
         "available": false,
@@ -614,7 +614,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0,
-      "analyzedAt": "2026-11-25T22:04:16.442Z",
+      "analyzedAt": "2026-11-26T22:02:26.758Z",
       "institutional": {
         "source": "N/A — ETF",
         "available": false,
@@ -626,7 +626,7 @@
         "hedgeFundNote": "ETFs tracked differently",
         "instNote": "ETFs do not have insider or congressional data",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-25T22:04:16.442Z"
+        "lastUpdated": "2026-11-26T22:02:26.758Z"
       },
       "analyst": {
         "available": false,
@@ -655,7 +655,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0,
-      "analyzedAt": "2026-11-25T22:04:17.885Z",
+      "analyzedAt": "2026-11-26T22:02:28.058Z",
       "institutional": {
         "source": "N/A — ETF",
         "available": false,
@@ -667,7 +667,7 @@
         "hedgeFundNote": "ETFs tracked differently",
         "instNote": "ETFs do not have insider or congressional data",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-25T22:04:17.885Z"
+        "lastUpdated": "2026-11-26T22:02:28.058Z"
       },
       "analyst": {
         "available": false,
@@ -696,7 +696,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0,
-      "analyzedAt": "2026-11-25T22:04:19.168Z",
+      "analyzedAt": "2026-11-26T22:02:29.348Z",
       "institutional": {
         "source": "N/A — ETF",
         "available": false,
@@ -708,7 +708,7 @@
         "hedgeFundNote": "ETFs tracked differently",
         "instNote": "ETFs do not have insider or congressional data",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-25T22:04:19.168Z"
+        "lastUpdated": "2026-11-26T22:02:29.348Z"
       },
       "analyst": {
         "available": false,
@@ -737,7 +737,7 @@
       "sentimentDelta": 0,
       "arrow": "→",
       "compositeScore": 0,
-      "analyzedAt": "2026-11-25T22:04:20.457Z",
+      "analyzedAt": "2026-11-26T22:02:30.659Z",
       "institutional": {
         "source": "N/A — ETF",
         "available": false,
@@ -749,7 +749,7 @@
         "hedgeFundNote": "ETFs tracked differently",
         "instNote": "ETFs do not have insider or congressional data",
         "quarterCovered": "Q4 2026",
-        "lastUpdated": "2026-11-25T22:04:20.457Z"
+        "lastUpdated": "2026-11-26T22:02:30.659Z"
       },
       "analyst": {
         "available": false,
